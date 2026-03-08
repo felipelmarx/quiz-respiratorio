@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurociência & Respiração - Guia de Estilo</title>
+    
+    <!-- Importando Fontes: Playfair Display (Serifa/Títulos) e Lato (Sans/Corpo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* ========================================
+        CSS COMPLETO - THEME ACADÊMICO / PREMIUM
+        Copie este bloco :root e estilos globais
+        ========================================
+        */
+        :root {
+            /* --- Paleta de Cores --- */
+            /* Primária: Dourado/Mostarda (Ação, Destaque) */
+            --color-gold: #C6A868; 
+            --color-gold-hover: #B09255;
+            --color-gold-light: #F2EBD9; /* Fundos sutis */
+
+            /* Secundária: Azul Profundo (Marca, Footer, Hero) */
+            --color-navy: #0A192F;
+            --color-navy-light: #162845;
+
+            /* Neutros */
+            --bg-body: #FFFFFF;
+            --bg-light: #F8F9FB;    /* Fundo alternado de seções */
+            --border-color: #E5E5E5;
+
+            /* Texto */
+            --text-primary: #1A1A1A; /* Quase preto para leitura */
+            --text-secondary: #555555;
+            --text-white: #FFFFFF;
+
+            /* --- Tipografia --- */
+            --font-display: 'Playfair Display', serif; /* H1, H2, H3 - Autoridade */
+            --font-body: 'Lato', sans-serif;           /* P, Span, UI - Clareza */
+
+            /* --- Espaçamentos & Layout --- */
+            --radius-sm: 4px;   /* Botões mais quadrados */
+            --radius-card: 8px; /* Cards suaves */
+            
+            --container-width: 1140px;
+            
+            /* --- Sombras --- */
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        /* Reset Básico */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Tipografia --- */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            color: var(--color-navy); /* Títulos em azul marinho por padrão */
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .h1-hero { 
+            font-size: 3.5rem; 
+            color: var(--text-white); /* H1 no Hero geralmente é branco */
+        }
+        .h2-section { font-size: 2.5rem; letter-spacing: -0.01em; }
+        .h3-title { font-size: 1.75rem; }
+        
+        /* Subtítulos decorativos (em cima do H2) */
+        .overline {
+            font-family: var(--font-body);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: var(--color-gold);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .body-lg { font-size: 1.125rem; color: var(--text-secondary); line-height: 1.8; }
+        .body-md { font-size: 1rem; color: var(--text-secondary); }
+        .body-sm { font-size: 0.875rem; color: var(--text-secondary); }
+
+        /* --- Botões (CTAs) --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 36px;
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-radius: var(--radius-sm); /* Levemente arredondado */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            gap: 10px;
+        }
+
+        /* Botão Dourado (Principal) */
+        .btn-gold {
+            background: var(--color-gold);
+            color: var(--color-navy); /* Texto escuro no dourado para contraste */
+        }
+        .btn-gold:hover {
+            background: var(--color-gold-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(198, 168, 104, 0.4);
+        }
+
+        /* Botão Outline (Secundário) */
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--color-gold);
+            color: var(--color-gold);
+        }
+        .btn-outline:hover {
+            background: var(--color-gold);
+            color: var(--color-navy);
+        }
+
+        /* --- Componentes --- */
+        /* Cards (Ex: Benefícios, Depoimentos) */
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-5px);
+            border-color: rgba(198, 168, 104, 0.3);
+        }
+
+        /* Ícone Circular Dourado */
+        .icon-circle {
+            width: 60px; height: 60px;
+            background: var(--color-navy);
+            color: var(--color-gold);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        /* Inputs */
+        .input-classic {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #DDD;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            transition: 0.3s;
+            background: #FDFDFD;
+        }
+        .input-classic:focus {
+            border-color: var(--color-gold);
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(198, 168, 104, 0.1);
+        }
+
+        /* --- Utilitários do Guia --- */
+        .container { max-width: var(--container-width); margin: 0 auto; padding: 40px 20px; }
+        
+        .grid-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 50px; }
+        
+        .color-swatch {
+            border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-sm);
+            cursor: pointer; transition: transform 0.2s; border: 1px solid #eee;
+        }
+        .color-swatch:hover { transform: translateY(-3px); }
+        .swatch-preview { height: 120px; width: 100%; }
+        .swatch-info { padding: 15px; background: white; }
+        .swatch-name { font-weight: 700; font-family: var(--font-display); color: var(--color-navy); display: block; }
+        .swatch-hex { font-family: monospace; color: var(--text-secondary); font-size: 0.85rem; }
+
+        .section-header { 
+            border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 30px; margin-top: 60px; 
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .section-header h2 { margin-bottom: 0; font-size: 1.8rem; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+        
+        .tooltip {
+            position: fixed; bottom: 20px; right: 20px; background: var(--color-navy); color: white;
+            padding: 12px 24px; border-radius: 4px; font-weight: 600; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .tooltip.show { opacity: 1; }
+
+        .code-block {
+            background: #1e1e1e; padding: 20px; border-radius: 8px; color: #d4d4d4;
+            font-family: monospace; overflow-x: auto; white-space: pre; font-size: 0.85rem;
+        }
+        .copy-btn {
+            font-size: 0.8rem; padding: 6px 12px; border-radius: 4px; background: var(--color-navy);
+            color: white; border: none; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="copy-feedback" class="tooltip">Copiado!</div>
+
+    <div class="container">
+        <!-- HEADER DO GUIA -->
+        <header style="margin-bottom: 70px; text-align: center; padding: 60px 0; background: var(--bg-light); border-radius: 12px;">
+            <p class="overline">Visual Identity System</p>
+            <h1 style="font-size: 3rem; margin-bottom: 15px;">Ciência & <span style="color: var(--color-gold)">Transformação</span></h1>
+            <p class="body-lg" style="max-width: 600px; margin: 0 auto;">
+                Guia de estilo extraído para institutos acadêmicos, clínicas e cursos de saúde.
+                <br><span style="font-size: 0.9rem; opacity: 0.7;">Baseado na imagem enviada (IBNR).</span>
+            </p>
+        </header>
+
+        <!-- 01. PALETA DE CORES -->
+        <section>
+            <div class="section-header">
+                <h2>01. Cores Institucionais</h2>
+                <span class="body-sm">Clique nos cards para copiar HEX</span>
+            </div>
+            
+            <div class="grid-colors">
+                <!-- Navy Primary -->
+                <div class="color-swatch" onclick="copyToClipboard('#0A192F', 'HEX')">
+                    <div class="swatch-preview" style="background-color: var(--color-navy);"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Royal Navy</span>
+                        <span class="swatch-hex">#0A192F</span>
+                    </div>
+                </div>
+
+                <!-- Gold Accent -->
+                <div class="color-swatch" onclick="copyToClipboard('#C6A868', 'HEX')">
+                    <div class="swatch-preview" style="background-color: var(--color-gold);"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Academic Gold</span>
+                        <span class="swatch-hex">#C6A868</span>
+                    </div>
+                </div>
+
+                 <!-- Gold Light -->
+                 <div class="color-swatch" onclick="copyToClipboard('#F2EBD9', 'HEX')">
+                    <div class="swatch-preview" style="background-color: var(--color-gold-light);"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Soft Gold (BG)</span>
+                        <span class="swatch-hex">#F2EBD9</span>
+                    </div>
+                </div>
+
+                <!-- Text Dark -->
+                <div class="color-swatch" onclick="copyToClipboard('#1A1A1A', 'HEX')">
+                    <div class="swatch-preview" style="background-color: var(--text-primary);"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Charcoal Text</span>
+                        <span class="swatch-hex">#1A1A1A</span>
+                    </div>
+                </div>
+
+                 <!-- Background Light -->
+                 <div class="color-swatch" onclick="copyToClipboard('#F8F9FB', 'HEX')">
+                    <div class="swatch-preview" style="background-color: var(--bg-light); border-bottom: 1px solid #ddd;"></div>
+                    <div class="swatch-info">
+                        <span class="swatch-name">Clinic White (BG)</span>
+                        <span class="swatch-hex">#F8F9FB</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 02. TIPOGRAFIA -->
+        <section>
+            <div class="section-header">
+                <h2>02. Tipografia</h2>
+                <span class="body-sm">Serifa Elegante (Títulos) + Sans Geométrica (Corpo)</span>
+            </div>
+
+            <div class="grid-2">
+                <!-- Títulos -->
+                <div>
+                    <div style="margin-bottom: 40px;">
+                        <span class="overline">Hero Title</span>
+                        <div style="background: var(--color-navy); padding: 20px; border-radius: 8px; margin-top: 5px;">
+                            <h1 class="h1-hero" style="font-size: 2.5rem;" onclick="copyToClipboard('.h1-hero', 'Class')">A Ciência da Respiração</h1>
+                        </div>
+                        <p class="body-sm" style="margin-top: 5px;">Playfair Display / Bold / White</p>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <span class="overline">Section Title</span>
+                        <h2 class="h2-section" onclick="copyToClipboard('.h2-section', 'Class')">Excelência em Pesquisa</h2>
+                        <p class="body-sm">Playfair Display / Bold / Navy</p>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 class="h3-title" onclick="copyToClipboard('.h3-title', 'Class')">Metodologia Aplicada</h3>
+                        <p class="body-sm">Playfair Display / Bold / Navy</p>
+                    </div>
+                </div>
+                
+                <!-- Corpo -->
+                <div>
+                    <div style="margin-bottom: 30px;">
+                        <p class="overline">Subtítulo Decorativo</p>
+                        <p class="overline" onclick="copyToClipboard('.overline', 'Class')">INSTITUTO BRASILEIRO</p>
+                        <p class="body-sm">Lato / Bold / Uppercase / Gold</p>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <p class="body-lg" onclick="copyToClipboard('.body-lg', 'Class')">
+                            Este estilo de texto é ideal para introduções longas. A combinação de serifa nos títulos com sans-serif no corpo transmite tradição acadêmica mas com modernidade científica.
+                        </p>
+                        <p class="body-sm">Body Large (1.125rem) / Lato Regular</p>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <p class="body-md" onclick="copyToClipboard('.body-md', 'Class')">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+                        </p>
+                        <p class="body-sm">Body Medium (1rem) / Lato Regular</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 03. ELEMENTOS DE UI -->
+        <section>
+            <div class="section-header">
+                <h2>03. Interface & Componentes</h2>
+            </div>
+
+            <div class="grid-2">
+                <!-- Botões -->
+                <div class="card" style="background: var(--bg-light);">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 20px;">Botões & Ações</h3>
+                    <div style="display: flex; flex-direction: column; gap: 20px; align-items: flex-start;">
+                        
+                        <button class="btn btn-gold" onclick="copyToClipboard('btn btn-gold', 'Class')">
+                            Inscreva-se Agora
+                        </button>
+                        
+                        <button class="btn btn-outline" onclick="copyToClipboard('btn btn-outline', 'Class')">
+                            Ver Conteúdo Programático
+                        </button>
+
+                    </div>
+                    <p class="body-sm" style="margin-top: 20px;">
+                        Estilo retangular (Radius 4px), Uppercase para autoridade.
+                    </p>
+                </div>
+
+                <!-- Formulário -->
+                <div class="card" style="background: white;">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 20px;">Inputs</h3>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label class="body-sm" style="display: block; margin-bottom: 8px; font-weight: bold;">Nome Completo</label>
+                            <input type="text" class="input-classic" placeholder="Digite seu nome" onclick="copyToClipboard('input-classic', 'Class')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards de Feature (Iconografia) -->
+            <div style="margin-top: 50px;">
+                <h3 style="margin-bottom: 30px;">Cards de Destaque</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+                    
+                    <!-- Card 1 -->
+                    <article class="card" style="text-align: center;">
+                        <div style="display: flex; justify-content: center;">
+                            <div class="icon-circle">
+                                <i data-lucide="award"></i>
+                            </div>
+                        </div>
+                        <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Certificação Oficial</h4>
+                        <p class="body-sm">Reconhecida pelo MEC e instituições internacionais.</p>
+                    </article>
+
+                    <!-- Card 2 -->
+                    <article class="card" style="text-align: center;">
+                        <div style="display: flex; justify-content: center;">
+                            <div class="icon-circle">
+                                <i data-lucide="book-open"></i>
+                            </div>
+                        </div>
+                        <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Material Didático</h4>
+                        <p class="body-sm">Acesso a biblioteca digital completa e atualizada.</p>
+                    </article>
+
+                    <!-- Card 3 -->
+                    <article class="card" style="text-align: center;">
+                        <div style="display: flex; justify-content: center;">
+                            <div class="icon-circle">
+                                <i data-lucide="users"></i>
+                            </div>
+                        </div>
+                        <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Networking</h4>
+                        <p class="body-sm">Conecte-se com profissionais da saúde de todo o país.</p>
+                    </article>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 04. EXPORTAR CSS -->
+        <section>
+            <div class="section-header">
+                <h2>04. Código CSS</h2>
+                <button class="copy-btn" onclick="copyCSS()">Copiar Variáveis</button>
+            </div>
+            
+            <div class="code-block" id="css-source">
+:root {
+    /* Cores */
+    --color-gold: #C6A868; 
+    --color-gold-hover: #B09255;
+    --color-gold-light: #F2EBD9;
+    --color-navy: #0A192F;
+    --color-navy-light: #162845;
+
+    /* Backgrounds */
+    --bg-body: #FFFFFF;
+    --bg-light: #F8F9FB;
+    --border-color: #E5E5E5;
+
+    /* Texto */
+    --text-primary: #1A1A1A;
+    --text-secondary: #555555;
+    --text-white: #FFFFFF;
+
+    /* Fontes */
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'Lato', sans-serif;
+
+    /* UI */
+    --radius-sm: 4px;
+    --radius-card: 8px;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+}
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function copyToClipboard(text, type) {
+            const cleanText = type === 'Class' ? text.replace('.', '') : text;
+            navigator.clipboard.writeText(cleanText).then(() => {
+                const feedback = document.getElementById('copy-feedback');
+                feedback.textContent = `${type} copiado: ${cleanText}`;
+                feedback.classList.add('show');
+                setTimeout(() => feedback.classList.remove('show'), 2000);
+            });
+        }
+
+        function copyCSS() {
+            const cssText = document.getElementById('css-source').innerText;
+            navigator.clipboard.writeText(cssText).then(() => {
+                const feedback = document.getElementById('copy-feedback');
+                feedback.textContent = "CSS copiado com sucesso!";
+                feedback.classList.add('show');
+                setTimeout(() => feedback.classList.remove('show'), 2000);
+            });
+        }
+    </script>
+</body>
+</html>
