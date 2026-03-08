@@ -210,3 +210,7 @@ aios/config/config.yaml
 
 # ignore cerebrum
 Cerebrum/*
+
+# Runtime data
+proc/
+root/
