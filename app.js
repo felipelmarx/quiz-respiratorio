@@ -1,12 +1,12 @@
 // ============================================
-// APP.JS - Motor da Experiência Disney
-// Quiz Respiratório Imersivo com IA Adaptativa
+// APP.JS - iBreathwork Quiz Respiratório
+// Instituto de Neurociência da Respiração
 // ============================================
 
 // ---- STATE ----
 let currentQuestion = 0;
 let answers = {};
-let scores = { padrao: 0, sintomas: 0, consciencia: 0 };
+let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0 };
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
@@ -160,7 +160,7 @@ function initParticles() {
             const currentOpacity = p.opacity * (0.5 + breathEffect * 0.5);
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(102, 126, 234, ${currentOpacity})`;
+            ctx.fillStyle = `rgba(45, 90, 61, ${currentOpacity})`;
             ctx.fill();
         });
 
@@ -226,7 +226,7 @@ function showChapterTransition(chapterNum, callback) {
             <div class="chapter-divider"></div>
             <p class="chapter-message">${message}</p>
             <div class="chapter-progress-dots">
-                ${[1, 2, 3].map(i => `
+                ${[1, 2, 3, 4].map(i => `
                     <div class="chapter-dot ${i <= chapterNum ? 'completed' : i === chapterNum + 1 ? 'current' : ''}">
                         ${i <= chapterNum ? '&#10003;' : i}
                     </div>
@@ -454,19 +454,19 @@ function renderToleranceTest(q, container) {
 
             <div class="tolerance-scale" id="tolerance-scale" style="display:none;">
                 <div class="scale-bar">
-                    <div class="scale-segment" style="background: #ef4444; flex: 10;">
+                    <div class="scale-segment" style="background: #DC3545; flex: 10;">
                         <span>10s</span>
                         <small>Disfuncional</small>
                     </div>
-                    <div class="scale-segment" style="background: #f59e0b; flex: 15;">
+                    <div class="scale-segment" style="background: #FFC107; flex: 15;">
                         <span>25s</span>
                         <small>Saudável</small>
                     </div>
-                    <div class="scale-segment" style="background: #22c55e; flex: 20;">
+                    <div class="scale-segment" style="background: #4A7C59; flex: 20;">
                         <span>45s</span>
                         <small>Aprendiz do Ar</small>
                     </div>
-                    <div class="scale-segment" style="background: #06b6d4; flex: 15;">
+                    <div class="scale-segment" style="background: #2D5A3D; flex: 15;">
                         <span>60s+</span>
                         <small>Guardião da Presença</small>
                     </div>
@@ -501,13 +501,13 @@ function startToleranceTimer() {
 
         // Color changes based on time
         if (toleranceSeconds < 10) {
-            circle.style.borderColor = '#ef4444';
+            circle.style.borderColor = '#DC3545';
         } else if (toleranceSeconds < 25) {
-            circle.style.borderColor = '#f59e0b';
+            circle.style.borderColor = '#FFC107';
         } else if (toleranceSeconds < 45) {
-            circle.style.borderColor = '#22c55e';
+            circle.style.borderColor = '#4A7C59';
         } else {
-            circle.style.borderColor = '#06b6d4';
+            circle.style.borderColor = '#2D5A3D';
         }
     }, 1000);
 }
@@ -703,7 +703,9 @@ function calculateFindings() {
     if (scores.sintomas > 6) findings += 3;
     else if (scores.sintomas > 3) findings += 2;
     else findings += 1;
-    if (scores.consciencia > 3) findings += 2;
+    if (scores.consciencia > 1) findings += 2;
+    else findings += 1;
+    if (scores.tolerancia > 2) findings += 2;
     else findings += 1;
     return Math.max(3, Math.min(9, findings));
 }
@@ -779,7 +781,7 @@ function showResults() {
     const healthScore = Math.max(0, 100 - riskPct);
 
     // Category analysis
-    const categories = ['padrao', 'sintomas', 'consciencia'].map(cat => {
+    const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
         const level = getCategoryLevel(cat);
         const config = CATEGORY_ANALYSIS[cat];
         const levelConfig = config.levels[level];
@@ -982,7 +984,7 @@ function launchConfetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ['#667eea', '#764ba2', '#22c55e', '#f59e0b', '#06b6d4', '#ec4899'];
+    const colors = ['#2D5A3D', '#4A7C59', '#28A745', '#E8F5E9', '#1e4a2e', '#6ba378'];
     const confetti = [];
 
     for (let i = 0; i < 100; i++) {

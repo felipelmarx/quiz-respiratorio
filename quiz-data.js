@@ -1,7 +1,7 @@
 // ============================================
 // QUIZ DATA - Teste de Ansiedade por Disfunção Respiratória
 // Baseado em protocolos de Respiração Funcional
-// Experiência Disney - Imersiva e Educativa
+// iBreathwork - Instituto de Neurociência da Respiração
 // ============================================
 
 const QUIZ_CONFIG = {
@@ -11,7 +11,8 @@ const QUIZ_CONFIG = {
     chapters: {
         padrao: { name: 'Padrão Respiratório', icon: '🫁', questions: [0, 1, 2, 3] },
         sintomas: { name: 'Sintomas & Sinais', icon: '⚡', questions: [4, 5, 6, 7] },
-        consciencia: { name: 'Consciência Corporal', icon: '🧘', questions: [8, 9] }
+        consciencia: { name: 'Consciência Corporal', icon: '🧘', questions: [8] },
+        tolerancia: { name: 'Tolerância ao CO₂', icon: '🧪', questions: [9] }
     }
 };
 
@@ -224,10 +225,11 @@ const QUIZ_QUESTIONS = [
             low: 'Excelente! Respiração diafragmática é a base da saúde respiratória.'
         }
     },
+    // ---- CAPÍTULO 4: TOLERÂNCIA AO CO₂ ----
     {
         id: 'stress_tolerance',
-        category: 'consciencia',
-        chapter: 3,
+        category: 'tolerancia',
+        chapter: 4,
         question: 'Teste de Tolerância ao Estresse Fisiológico',
         type: 'tolerance_test',
         instructions: {
@@ -250,10 +252,10 @@ const QUIZ_QUESTIONS = [
             text: 'O tempo de expiração controlada é um dos melhores indicadores da sua tolerância ao CO2 e do nível de estresse fisiológico do seu corpo. Quanto menor o tempo, maior o estado de alerta crônico do seu sistema nervoso.',
             reference: 'Courtney, R. (2009). The functions of breathing and its dysfunctions. International Journal of Osteopathic Medicine.',
             scale: {
-                under_10: { label: 'Disfuncional', color: '#ef4444' },
-                '10_25': { label: 'Abaixo do Saudável', color: '#f59e0b' },
-                '25_45': { label: 'Saudável', color: '#22c55e' },
-                over_45: { label: 'Guardião da Presença', color: '#06b6d4' }
+                under_10: { label: 'Disfuncional', color: '#DC3545' },
+                '10_25': { label: 'Abaixo do Saudável', color: '#FFC107' },
+                '25_45': { label: 'Saudável', color: '#4A7C59' },
+                over_45: { label: 'Guardião da Presença', color: '#2D5A3D' }
             }
         },
         adaptiveMessage: {
@@ -279,9 +281,16 @@ const AI_ADAPTIVE = {
         2: {
             title: 'Capítulo 2 Completo',
             subtitle: 'Sintomas & Sinais',
-            high: 'Os sintomas confirmam um padrão significativo. Agora vou pedir que você faça dois exercícios práticos — eles vão revelar o que os números não mostram.',
-            medium: 'Interessante. Alguns sintomas chamam atenção. Os próximos exercícios práticos vão nos dar clareza total.',
-            low: 'Poucos sintomas identificados. Vamos fazer exercícios práticos para confirmar.'
+            high: 'Os sintomas confirmam um padrão significativo. Agora vou pedir que você faça um exercício prático — ele vai revelar o que os números não mostram.',
+            medium: 'Interessante. Alguns sintomas chamam atenção. O próximo exercício prático vai nos dar mais clareza.',
+            low: 'Poucos sintomas identificados. Vamos fazer um exercício prático para confirmar.'
+        },
+        3: {
+            title: 'Capítulo 3 Completo',
+            subtitle: 'Consciência Corporal',
+            high: 'A respiração torácica indica estresse crônico. Agora vamos medir a tolerância dos seus quimiorreceptores ao CO₂.',
+            medium: 'Bom exercício. Agora vamos testar a sensibilidade dos seus quimiorreceptores ao CO₂.',
+            low: 'Ótima consciência corporal! Vamos agora medir sua tolerância ao CO₂.'
         }
     },
 
@@ -319,9 +328,9 @@ const RESULT_PROFILES = {
         range: [0, 7],
         title: 'Respiração Funcional',
         emoji: '🌟',
-        color: '#22c55e',
-        colorGlow: 'rgba(34, 197, 94, 0.3)',
-        gradient: 'linear-gradient(135deg, #22c55e, #06b6d4)',
+        color: '#2D5A3D',
+        colorGlow: 'rgba(45, 90, 61, 0.3)',
+        gradient: 'linear-gradient(135deg, #2D5A3D, #4A7C59)',
         description: 'Seu padrão respiratório está dentro dos parâmetros funcionais. A predominância da respiração nasal e poucos sintomas indicam uma boa mecânica ventilatória.',
         mainInsight: 'Seu sistema respiratório funciona bem. Com técnicas avançadas de respiração funcional, você pode potencializar performance, foco e resiliência ao estresse.',
         cta: 'Mesmo com um bom padrão, técnicas avançadas de respiração podem levar você a outro nível de performance e bem-estar.'
@@ -330,9 +339,9 @@ const RESULT_PROFILES = {
         range: [8, 15],
         title: 'Atenção Moderada',
         emoji: '⚠️',
-        color: '#f59e0b',
-        colorGlow: 'rgba(245, 158, 11, 0.3)',
-        gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+        color: '#FFC107',
+        colorGlow: 'rgba(255, 193, 7, 0.3)',
+        gradient: 'linear-gradient(135deg, #FFC107, #e6a800)',
         description: 'Identifico padrões que merecem atenção. Embora não sejam críticos, esses sinais sugerem que sua respiração pode estar operando abaixo do potencial ideal, contribuindo para sintomas de ansiedade.',
         mainInsight: 'Existem oportunidades claras de melhoria. Correções no padrão respiratório podem reduzir significativamente os sintomas de ansiedade em semanas.',
         cta: 'Pequenas correções no seu padrão respiratório podem trazer mudanças significativas na energia, sono e controle da ansiedade.'
@@ -341,9 +350,9 @@ const RESULT_PROFILES = {
         range: [16, 23],
         title: 'Disfunção Respiratória',
         emoji: '🔴',
-        color: '#ef4444',
-        colorGlow: 'rgba(239, 68, 68, 0.3)',
-        gradient: 'linear-gradient(135deg, #ef4444, #dc2626)',
+        color: '#DC3545',
+        colorGlow: 'rgba(220, 53, 69, 0.3)',
+        gradient: 'linear-gradient(135deg, #DC3545, #c82333)',
         description: 'Seus resultados indicam um padrão respiratório disfuncional com impacto direto na sua ansiedade e qualidade de vida. A combinação de sintomas sugere hiperventilação crônica, alterando a bioquímica do seu sangue.',
         mainInsight: 'Sua respiração está diretamente alimentando o ciclo da ansiedade. A reeducação respiratória é uma das ferramentas mais poderosas para quebrar esse ciclo.',
         cta: 'Um programa estruturado de reeducação respiratória pode transformar sua relação com a ansiedade. Resultados aparecem entre 2-4 semanas.'
@@ -352,9 +361,9 @@ const RESULT_PROFILES = {
         range: [24, 40],
         title: 'Disfunção Respiratória Severa',
         emoji: '🚨',
-        color: '#dc2626',
-        colorGlow: 'rgba(220, 38, 38, 0.4)',
-        gradient: 'linear-gradient(135deg, #dc2626, #991b1b)',
+        color: '#c82333',
+        colorGlow: 'rgba(200, 35, 51, 0.4)',
+        gradient: 'linear-gradient(135deg, #c82333, #991b1b)',
         description: 'A análise indica múltiplos sinais de disfunção respiratória significativa. O volume de sintomas e intensidade sugerem que seu padrão respiratório está afetando seriamente sua saúde, sono e qualidade de vida.',
         mainInsight: 'Seu corpo está sinalizando claramente que precisa de atenção urgente. A boa notícia: a respiração é um dos poucos processos autônomos que podemos treinar conscientemente.',
         cta: 'A reeducação respiratória deve ser uma prioridade. Um programa personalizado pode reverter esse quadro e transformar sua qualidade de vida.'
@@ -371,9 +380,9 @@ const CATEGORY_ANALYSIS = {
         icon: '🫁',
         maxScore: 13,
         levels: {
-            low: { max: 3, label: 'Funcional', color: '#22c55e' },
-            medium: { max: 7, label: 'Atenção', color: '#f59e0b' },
-            high: { max: 13, label: 'Disfuncional', color: '#ef4444' }
+            low: { max: 3, label: 'Funcional', color: '#2D5A3D' },
+            medium: { max: 7, label: 'Atenção', color: '#FFC107' },
+            high: { max: 13, label: 'Disfuncional', color: '#DC3545' }
         },
         insights: {
             low: 'Seu padrão respiratório básico está bom. A respiração nasal predominante protege seu sistema nervoso.',
@@ -386,9 +395,9 @@ const CATEGORY_ANALYSIS = {
         icon: '⚡',
         maxScore: 13,
         levels: {
-            low: { max: 3, label: 'Controlados', color: '#22c55e' },
-            medium: { max: 7, label: 'Moderados', color: '#f59e0b' },
-            high: { max: 13, label: 'Intensos', color: '#ef4444' }
+            low: { max: 3, label: 'Controlados', color: '#2D5A3D' },
+            medium: { max: 7, label: 'Moderados', color: '#FFC107' },
+            high: { max: 13, label: 'Intensos', color: '#DC3545' }
         },
         insights: {
             low: 'Poucos sintomas ventilatórios. Seu corpo mantém boa regulação autônoma.',
@@ -399,16 +408,31 @@ const CATEGORY_ANALYSIS = {
     consciencia: {
         name: 'Consciência Corporal',
         icon: '🧘',
-        maxScore: 7,
+        maxScore: 3,
         levels: {
-            low: { max: 1, label: 'Boa', color: '#22c55e' },
-            medium: { max: 4, label: 'Atenção', color: '#f59e0b' },
-            high: { max: 7, label: 'Comprometida', color: '#ef4444' }
+            low: { max: 0, label: 'Boa', color: '#2D5A3D' },
+            medium: { max: 1, label: 'Atenção', color: '#FFC107' },
+            high: { max: 3, label: 'Comprometida', color: '#DC3545' }
         },
         insights: {
-            low: 'Boa consciência corporal e respiração diafragmática natural. Base sólida para otimização.',
-            medium: 'Há espaço para melhora na consciência respiratória. Exercícios de atenção plena podem ajudar.',
-            high: 'A respiração torácica predominante e baixa tolerância ao CO₂ indicam estresse fisiológico crônico.'
+            low: 'Respiração diafragmática natural — padrão ideal. Sua mecânica ventilatória está preservada.',
+            medium: 'Respiração diafragmática presente. Continue atento ao padrão.',
+            high: 'A respiração torácica (apical) predominante indica ativação crônica do Sistema Nervoso Simpático.'
+        }
+    },
+    tolerancia: {
+        name: 'Tolerância ao CO₂',
+        icon: '🧪',
+        maxScore: 4,
+        levels: {
+            low: { max: 1, label: 'Adequada', color: '#2D5A3D' },
+            medium: { max: 3, label: 'Reduzida', color: '#FFC107' },
+            high: { max: 4, label: 'Baixa', color: '#DC3545' }
+        },
+        insights: {
+            low: 'Boa tolerância ao CO₂. Seus quimiorreceptores têm sensibilidade adequada, indicando equilíbrio do sistema nervoso autônomo.',
+            medium: 'Tolerância ao CO₂ reduzida. Seus quimiorreceptores estão mais sensíveis, o que pode contribuir para hiperventilação e ansiedade.',
+            high: 'Baixa tolerância ao CO₂. A hipersensibilidade dos quimiorreceptores mantém seu sistema nervoso em estado de alerta elevado, alimentando o ciclo da ansiedade.'
         }
     }
 };
