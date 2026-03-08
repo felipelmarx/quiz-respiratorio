@@ -1,0 +1,146 @@
+export type UserRole = 'master' | 'instructor'
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          email: string
+          name: string
+          role: UserRole
+          whatsapp: string | null
+          avatar_url: string | null
+          slug: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name: string
+          role?: UserRole
+          whatsapp?: string | null
+          avatar_url?: string | null
+          slug?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string
+          role?: UserRole
+          whatsapp?: string | null
+          avatar_url?: string | null
+          slug?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+      }
+      quiz_leads: {
+        Row: {
+          id: string
+          instructor_id: string | null
+          name: string
+          email: string
+          phone: string | null
+          referral: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          instructor_id?: string | null
+          name: string
+          email: string
+          phone?: string | null
+          referral?: string | null
+          created_at?: string
+        }
+        Update: {
+          instructor_id?: string | null
+          name?: string
+          email?: string
+          phone?: string | null
+          referral?: string | null
+        }
+      }
+      quiz_responses: {
+        Row: {
+          id: string
+          lead_id: string
+          instructor_id: string | null
+          answers: Record<string, unknown>
+          scores: Record<string, number>
+          total_score: number
+          profile: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          instructor_id?: string | null
+          answers: Record<string, unknown>
+          scores: Record<string, number>
+          total_score: number
+          profile: string
+          created_at?: string
+        }
+        Update: {
+          answers?: Record<string, unknown>
+          scores?: Record<string, number>
+          total_score?: number
+          profile?: string
+        }
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          details: Record<string, unknown> | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          details?: Record<string, unknown> | null
+          created_at?: string
+        }
+        Update: Record<string, never>
+      }
+    }
+  }
+}
+
+export interface QuizScores {
+  padrao: number
+  sintomas: number
+  consciencia: number
+  tolerancia: number
+}
+
+export type QuizProfile = 'funcional' | 'atencao_moderada' | 'disfuncao' | 'disfuncao_severa'
+
+export interface QuizSubmission {
+  name: string
+  email: string
+  phone?: string
+  referral?: string
+  instructor_slug?: string
+  answers: Record<string, unknown>
+  scores: QuizScores
+  total_score: number
+  profile: QuizProfile
+}
+
+export interface DashboardStats {
+  totalLeads: number
+  totalResponses: number
+  averageScore: number
+  profileDistribution: Record<QuizProfile, number>
+  recentLeads: Database['public']['Tables']['quiz_leads']['Row'][]
+}
