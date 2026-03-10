@@ -71,46 +71,58 @@ ALTER TABLE public.quiz_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Users: master sees all, instructors see only themselves
+DROP POLICY IF EXISTS "master_all_users" ON public.users;
 CREATE POLICY "master_all_users" ON public.users
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'master')
   );
 
+DROP POLICY IF EXISTS "instructor_self" ON public.users;
 CREATE POLICY "instructor_self" ON public.users
   FOR SELECT USING (id = auth.uid());
 
 -- Quiz Leads: master sees all, instructor sees own leads
+DROP POLICY IF EXISTS "master_all_leads" ON public.quiz_leads;
 CREATE POLICY "master_all_leads" ON public.quiz_leads
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'master')
   );
 
+DROP POLICY IF EXISTS "instructor_own_leads" ON public.quiz_leads;
 CREATE POLICY "instructor_own_leads" ON public.quiz_leads
   FOR SELECT USING (instructor_id = auth.uid());
 
 -- Allow anonymous inserts for quiz submissions (public quiz)
+DROP POLICY IF EXISTS "anon_insert_leads" ON public.quiz_leads;
+DROP POLICY IF EXISTS "Allow public insert leads" ON public.quiz_leads;
 CREATE POLICY "anon_insert_leads" ON public.quiz_leads
   FOR INSERT WITH CHECK (true);
 
 -- Quiz Responses: master sees all, instructor sees own
+DROP POLICY IF EXISTS "master_all_responses" ON public.quiz_responses;
 CREATE POLICY "master_all_responses" ON public.quiz_responses
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'master')
   );
 
+DROP POLICY IF EXISTS "instructor_own_responses" ON public.quiz_responses;
 CREATE POLICY "instructor_own_responses" ON public.quiz_responses
   FOR SELECT USING (instructor_id = auth.uid());
 
 -- Allow anonymous inserts for quiz submissions
+DROP POLICY IF EXISTS "anon_insert_responses" ON public.quiz_responses;
+DROP POLICY IF EXISTS "Allow public insert responses" ON public.quiz_responses;
 CREATE POLICY "anon_insert_responses" ON public.quiz_responses
   FOR INSERT WITH CHECK (true);
 
 -- Audit Logs: master only
+DROP POLICY IF EXISTS "master_all_logs" ON public.audit_logs;
 CREATE POLICY "master_all_logs" ON public.audit_logs
   FOR ALL USING (
     EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'master')
   );
 
+DROP POLICY IF EXISTS "user_insert_logs" ON public.audit_logs;
 CREATE POLICY "user_insert_logs" ON public.audit_logs
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
@@ -125,6 +137,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS users_updated_at ON public.users;
 CREATE TRIGGER users_updated_at
   BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
