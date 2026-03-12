@@ -70,7 +70,7 @@ export interface Database {
       quiz_responses: {
         Row: {
           id: string
-          lead_id: string
+          lead_id: string | null
           instructor_id: string | null
           answers: Record<string, unknown>
           scores: Record<string, number>
@@ -80,7 +80,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          lead_id: string
+          lead_id?: string | null
           instructor_id?: string | null
           answers: Record<string, unknown>
           scores: Record<string, number>

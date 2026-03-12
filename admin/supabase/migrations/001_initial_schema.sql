@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS public.quiz_leads (
 -- 3. Quiz responses table (answers and scores)
 CREATE TABLE IF NOT EXISTS public.quiz_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id UUID NOT NULL REFERENCES public.quiz_leads(id) ON DELETE CASCADE,
+  lead_id UUID REFERENCES public.quiz_leads(id) ON DELETE CASCADE,
   instructor_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   answers JSONB NOT NULL DEFAULT '{}',
   scores JSONB NOT NULL DEFAULT '{}',
@@ -114,6 +114,11 @@ DROP POLICY IF EXISTS "anon_insert_responses" ON public.quiz_responses;
 DROP POLICY IF EXISTS "Allow public insert responses" ON public.quiz_responses;
 CREATE POLICY "anon_insert_responses" ON public.quiz_responses
   FOR INSERT WITH CHECK (true);
+
+-- Allow anonymous updates for linking leads to responses
+DROP POLICY IF EXISTS "anon_update_responses" ON public.quiz_responses;
+CREATE POLICY "anon_update_responses" ON public.quiz_responses
+  FOR UPDATE USING (lead_id IS NULL) WITH CHECK (true);
 
 -- Audit Logs: master only
 DROP POLICY IF EXISTS "master_all_logs" ON public.audit_logs;

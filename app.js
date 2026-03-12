@@ -103,6 +103,109 @@ async function saveLeadToSupabase(leadData) {
     }
 }
 
+// ---- SAVE ANONYMOUS RESPONSE ----
+let savedResponseId = null;
+
+async function saveAnonymousResponse() {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping anonymous save.');
+        return;
+    }
+
+    const instructor = getInstructorConfig();
+    const profile = getProfile();
+    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
+
+    const responseData = {
+        answers: answers,
+        scores: scores,
+        total_score: totalScore,
+        profile: profileKey
+    };
+
+    try {
+        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_responses`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(responseData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            savedResponseId = data[0]?.id || null;
+            console.log('[Supabase] Anonymous response saved:', savedResponseId);
+        } else {
+            console.error('[Supabase] Error saving anonymous response:', response.status);
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
+// ---- SAVE APPLICATION (Lead + Link to Response) ----
+async function saveApplication(leadData) {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping save.');
+        return;
+    }
+
+    try {
+        // 1. Save lead
+        const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(leadData)
+        });
+
+        if (!leadResponse.ok) {
+            console.error('[Supabase] Error saving lead:', leadResponse.status);
+            return;
+        }
+
+        const leadResult = await leadResponse.json();
+        const leadId = leadResult[0]?.id;
+        console.log('[Supabase] Lead saved:', leadId);
+
+        // 2. Link response to lead (if we have a saved response)
+        if (savedResponseId && leadId) {
+            const updateResponse = await fetch(
+                `${SUPABASE_CONFIG.url}/rest/v1/quiz_responses?id=eq.${savedResponseId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_CONFIG.anonKey,
+                        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        lead_id: leadId,
+                        instructor_id: leadData.instructor_id || null
+                    })
+                }
+            );
+
+            if (updateResponse.ok) {
+                console.log('[Supabase] Response linked to lead');
+            } else {
+                console.error('[Supabase] Error linking response:', updateResponse.status);
+            }
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
 // ---- PARTICLES ----
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
@@ -655,14 +758,10 @@ function runAnalyzingAnimation() {
     function showStep() {
         if (stepIndex >= ANALYZING_STEPS.length) {
             setTimeout(() => {
-                const findings = calculateFindings();
-                document.getElementById('findings-count').textContent = findings;
-                document.getElementById('analyzing-animation').classList.add('fade-out');
-                setTimeout(() => {
-                    document.getElementById('analyzing-animation').style.display = 'none';
-                    document.getElementById('lead-form-container').style.display = 'block';
-                    document.getElementById('lead-form-container').classList.add('fade-in');
-                }, 400);
+                // Save anonymous response immediately
+                saveAnonymousResponse();
+                // Go directly to results
+                showResults();
             }, 600);
             return;
         }
@@ -710,15 +809,32 @@ function calculateFindings() {
     return Math.max(3, Math.min(9, findings));
 }
 
-// ---- LEAD SUBMISSION ----
-function submitLead(event) {
+// ---- APPLICATION FORM ----
+function showApplicationForm() {
+    haptic('medium');
+    trackEvent('application_form_opened', { profile: getProfile().title });
+
+    const btn = document.getElementById('btn-show-application');
+    const form = document.getElementById('application-form-wrapper');
+
+    btn.style.display = 'none';
+    form.style.display = 'block';
+    form.classList.add('fade-in');
+
+    // Scroll to form
+    setTimeout(() => {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+function submitApplication(event) {
     event.preventDefault();
     haptic('success');
 
-    userName = document.getElementById('lead-name').value.trim();
-    userEmail = document.getElementById('lead-email').value.trim();
-    const phone = document.getElementById('lead-phone').value.trim();
-    referralEmail = document.getElementById('lead-referral').value.trim();
+    userName = document.getElementById('app-name').value.trim();
+    userEmail = document.getElementById('app-email').value.trim();
+    const phone = document.getElementById('app-phone').value.trim();
+    referralEmail = document.getElementById('app-referral').value.trim();
 
     const instructor = getInstructorConfig();
     const leadData = {
@@ -726,22 +842,16 @@ function submitLead(event) {
         email: userEmail,
         phone: phone || null,
         referral: referralEmail || null,
-        instructor: instructor.instructorName || null,
-        answers: answers,
-        scores: scores,
-        total_score: totalScore,
-        profile: getProfile().title,
-        created_at: new Date().toISOString()
     };
 
-    console.log('Lead captured:', leadData);
+    console.log('Application submitted:', leadData);
 
     // Save to Supabase (non-blocking)
-    saveLeadToSupabase(leadData);
+    saveApplication(leadData);
 
     // Track conversion
-    trackEvent('lead_captured', {
-        profile: leadData.profile,
+    trackEvent('application_submitted', {
+        profile: getProfile().title,
         total_score: totalScore,
         has_referral: !!referralEmail
     });
@@ -751,7 +861,21 @@ function submitLead(event) {
         fbq('track', 'Lead', { content_name: 'quiz_respiratorio' });
     }
 
-    showResults();
+    // Show confirmation
+    document.getElementById('application-form-wrapper').style.display = 'none';
+    const confirmation = document.getElementById('application-confirmation');
+    confirmation.style.display = 'block';
+    confirmation.classList.add('fade-in');
+    document.getElementById('confirmation-name').textContent = userName;
+
+    // Update greeting with name
+    const greeting = document.querySelector('.result-greeting strong');
+    if (greeting) greeting.textContent = userName;
+
+    // Scroll to confirmation
+    setTimeout(() => {
+        confirmation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
 // ---- GET PROFILE ----
@@ -800,7 +924,7 @@ function showResults() {
     container.innerHTML = `
         <div class="result-hero">
             <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
+            <p class="result-greeting">Resultado preparado para <strong>você</strong></p>
 
             <div class="score-ring-container">
                 <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
@@ -872,19 +996,55 @@ function showResults() {
             </div>
         </div>
 
-        <div class="result-cta-section fade-in-section">
+        <div class="result-cta-section fade-in-section" id="application-section">
             <div class="cta-card" style="border-top: 3px solid ${profile.color}">
+                <div class="cta-badge">Oportunidade Exclusiva</div>
                 ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                <h3>Quer transformar sua respiração?</h3>
-                <p>${profile.cta}</p>
-                ${instructor.ctaUrl ? `
-                    <button class="btn-primary btn-glow" onclick="handleCtaClick()">
-                        ${instructor.ctaText}
-                        <span class="btn-arrow">&rarr;</span>
-                    </button>
-                ` : `
-                    <p class="cta-coming-soon">Em breve: programa completo de reeducação respiratória.</p>
-                `}
+                <h3>Quer experimentar o poder da respiração consciente?</h3>
+                <p>Aplique para ser <strong>selecionado(a)</strong> para uma demonstração gratuita de breathwork com um profissional certificado do <strong>Instituto Brasileiro de Neurociência e Respiração</strong>.</p>
+                <p class="cta-subtitle">${profile.cta}</p>
+
+                <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
+                    Quero Ser Selecionado para uma Demonstração Gratuita
+                    <span class="btn-arrow">&rarr;</span>
+                </button>
+
+                <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
+                    <form id="application-form" onsubmit="submitApplication(event)">
+                        <div class="form-group">
+                            <label for="app-name">Seu nome</label>
+                            <input type="text" id="app-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-email">Seu melhor e-mail</label>
+                            <input type="email" id="app-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-phone">WhatsApp</label>
+                            <input type="tel" id="app-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
+                            <input type="email" id="app-referral" placeholder="email de quem te indicou" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-primary btn-full btn-glow" id="btn-submit-application">
+                            Enviar Minha Aplicação
+                            <span class="btn-arrow">&rarr;</span>
+                        </button>
+                        <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
+                    </form>
+                </div>
+
+                <div class="application-confirmation" id="application-confirmation" style="display:none;">
+                    <div class="confirmation-icon">✅</div>
+                    <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
+                    <p class="confirmation-text">
+                        Obrigado, <strong id="confirmation-name"></strong>! Um profissional do
+                        <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
+                        entrará em contato pelo seu WhatsApp se você for selecionado(a).
+                    </p>
+                    <p class="confirmation-note">Fique atento ao seu WhatsApp nos próximos dias.</p>
+                </div>
             </div>
         </div>
     `;

@@ -103,7 +103,7 @@
         </div>
 
         <!-- ==============================
-             TELA 3: LEAD CAPTURE
+             TELA 3: ANALYZING ANIMATION
              ============================== -->
         <div id="lead-screen" class="screen">
             <div class="lead-wrapper">
@@ -116,38 +116,6 @@
                     </div>
                     <h2 class="analyzing-title">Analisando suas respostas...</h2>
                     <div class="analyzing-steps" id="analyzing-steps"></div>
-                </div>
-
-                <div class="lead-form-container" id="lead-form-container" style="display:none;">
-                    <div class="lead-icon">📋</div>
-                    <h2 class="lead-title">Seu relatório está pronto!</h2>
-                    <p class="lead-subtitle">
-                        Identificamos <strong id="findings-count">5</strong> pontos importantes no seu padrão respiratório.
-                        Insira seus dados para ver o resultado completo:
-                    </p>
-                    <form id="lead-form" onsubmit="submitLead(event)">
-                        <div class="form-group">
-                            <label for="lead-name">Seu nome</label>
-                            <input type="text" id="lead-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
-                        </div>
-                        <div class="form-group">
-                            <label for="lead-email">Seu melhor e-mail</label>
-                            <input type="email" id="lead-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
-                        </div>
-                        <div class="form-group">
-                            <label for="lead-phone">WhatsApp <span class="optional">(opcional)</span></label>
-                            <input type="tel" id="lead-phone" placeholder="(11) 99999-9999" autocomplete="tel">
-                        </div>
-                        <div class="form-group">
-                            <label for="lead-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
-                            <input type="email" id="lead-referral" placeholder="email de quem te indicou" autocomplete="off">
-                        </div>
-                        <button type="submit" class="btn-primary btn-full btn-glow">
-                            Ver Meu Relatório Completo
-                            <span class="btn-arrow">&rarr;</span>
-                        </button>
-                        <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
-                    </form>
                 </div>
             </div>
         </div>
