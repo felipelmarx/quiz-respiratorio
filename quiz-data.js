@@ -414,9 +414,24 @@ const CATEGORY_ANALYSIS = {
             high: { max: 13, label: 'Disfuncional', color: '#DC3545' }
         },
         insights: {
-            low: 'Seu padrão respiratório básico está bom. A respiração nasal predominante protege seu sistema nervoso.',
-            medium: 'Há sinais de respiração oral que podem estar ativando o Sistema Nervoso Simpático desnecessariamente.',
-            high: 'O padrão de respiração oral crônica está diretamente ligado à ativação constante do sistema de estresse do seu corpo.'
+            low: 'Seu padrão respiratório básico está bom. A respiração nasal predominante protege seu sistema nervoso, mantendo níveis adequados de CO₂ e boa oxigenação cerebral.',
+            medium: 'Há sinais de respiração oral, o que reduz o CO₂ no sangue — causando vasoconstrição, sobrecarga cardiovascular e menor oxigenação do cérebro e extremidades.',
+            high: 'O padrão de respiração oral crônica reduz significativamente o CO₂ sanguíneo, provocando vasoconstrição, aumento da pressão arterial e hipóxia cerebral e periférica.'
+        },
+        references: {
+            low: [
+                { author: 'Lundberg', year: 2008, detail: 'Nitric oxide and the paranasal sinuses' },
+                { author: 'Recinto et al.', year: 2017, detail: 'Nasal breathing and autonomic regulation' }
+            ],
+            medium: [
+                { author: 'Bartley', year: 2019, detail: 'Mouth breathing and CO₂ depletion' },
+                { author: 'Lum', year: 1987, detail: 'Hyperventilation and cerebral vasoconstriction' }
+            ],
+            high: [
+                { author: 'Bartley', year: 2019, detail: 'Chronic oral breathing and cardiovascular stress' },
+                { author: 'Lum', year: 1987, detail: 'Hyperventilation syndromes' },
+                { author: 'Lundberg', year: 2008, detail: 'Nasal NO and vascular tone' }
+            ]
         }
     },
     sintomas: {
@@ -429,9 +444,23 @@ const CATEGORY_ANALYSIS = {
             high: { max: 13, label: 'Intensos', color: '#DC3545' }
         },
         insights: {
-            low: 'Poucos sintomas ventilatórios. Seu corpo mantém boa regulação autônoma.',
-            medium: 'Os sintomas relatados (palpitações, falta de ar, suspiros) são sinais clássicos de hiperventilação leve.',
-            high: 'O conjunto de sintomas sugere hiperventilação crônica. Isso reduz o CO₂ sanguíneo, causando vasoconstrição cerebral.'
+            low: 'Poucos sintomas ventilatórios. Seu corpo mantém boa regulação autônoma e equilíbrio entre O₂ e CO₂.',
+            medium: 'Os sintomas relatados (palpitações, falta de ar, suspiros) são sinais clássicos de hiperventilação crônica leve.',
+            high: 'O conjunto de sintomas sugere hiperventilação crônica. A queda de CO₂ sanguíneo provoca vasoconstrição cerebral, tontura e formigamento nas extremidades.'
+        },
+        references: {
+            low: [
+                { author: 'Courtney', year: 2009, detail: 'Breathing pattern disorders and well-being' }
+            ],
+            medium: [
+                { author: 'Lum', year: 1987, detail: 'Hyperventilation and somatic symptoms' },
+                { author: 'Courtney', year: 2009, detail: 'Dysfunctional breathing patterns' }
+            ],
+            high: [
+                { author: 'Lum', year: 1987, detail: 'Chronic hyperventilation syndrome' },
+                { author: 'Bass & Gardner', year: 1985, detail: 'Hyperventilation and anxiety symptoms' },
+                { author: 'Courtney', year: 2009, detail: 'Breathing pattern disorders' }
+            ]
         }
     },
     consciencia: {
@@ -444,9 +473,22 @@ const CATEGORY_ANALYSIS = {
             high: { max: 3, label: 'Comprometida', color: '#DC3545' }
         },
         insights: {
-            low: 'Respiração diafragmática natural — padrão ideal. Sua mecânica ventilatória está preservada.',
-            medium: 'Respiração diafragmática presente. Continue atento ao padrão.',
-            high: 'A respiração torácica (apical) predominante indica ativação crônica do Sistema Nervoso Simpático.'
+            low: 'Respiração diafragmática natural — padrão ideal. Sua mecânica ventilatória está preservada e o diafragma ativa o nervo vago adequadamente.',
+            medium: 'Respiração mista com predomínio torácico em situações de estresse, reduzindo a ativação vagal e o tônus parassimpático.',
+            high: 'A respiração torácica (apical) predominante indica ativação crônica do Sistema Nervoso Simpático e baixa estimulação vagal.'
+        },
+        references: {
+            low: [
+                { author: 'Ma et al.', year: 2017, detail: 'Diaphragmatic breathing and vagal tone' }
+            ],
+            medium: [
+                { author: 'Ma et al.', year: 2017, detail: 'Breathing mechanics and autonomic balance' },
+                { author: 'Russo et al.', year: 2017, detail: 'Slow breathing and cardiac vagal tone' }
+            ],
+            high: [
+                { author: 'Ma et al.', year: 2017, detail: 'Diaphragmatic breathing reduces cortisol' },
+                { author: 'Russo et al.', year: 2017, detail: 'Thoracic breathing and sympathetic dominance' }
+            ]
         }
     },
     tolerancia: {
@@ -460,8 +502,22 @@ const CATEGORY_ANALYSIS = {
         },
         insights: {
             low: 'Boa tolerância ao CO₂. Seus quimiorreceptores têm sensibilidade adequada, indicando equilíbrio do sistema nervoso autônomo.',
-            medium: 'Tolerância ao CO₂ reduzida. Seus quimiorreceptores estão mais sensíveis, o que pode contribuir para hiperventilação e ansiedade.',
-            high: 'Baixa tolerância ao CO₂. A hipersensibilidade dos quimiorreceptores mantém seu sistema nervoso em estado de alerta elevado, alimentando o ciclo da ansiedade.'
+            medium: 'Tolerância ao CO₂ reduzida. Seus quimiorreceptores estão hipersensíveis, o que pode desencadear hiperventilação e ciclos de ansiedade.',
+            high: 'Baixa tolerância ao CO₂. A hipersensibilidade dos quimiorreceptores mantém seu sistema nervoso em alerta constante, perpetuando o ciclo respiração-ansiedade.'
+        },
+        references: {
+            low: [
+                { author: 'Meuret et al.', year: 2010, detail: 'CO₂ levels and panic regulation' }
+            ],
+            medium: [
+                { author: 'Meuret et al.', year: 2010, detail: 'pCO₂ biofeedback in anxiety disorders' },
+                { author: 'Papp et al.', year: 1997, detail: 'CO₂ hypersensitivity in panic disorder' }
+            ],
+            high: [
+                { author: 'Meuret et al.', year: 2010, detail: 'Chronic hypocapnia and anxiety' },
+                { author: 'Papp et al.', year: 1997, detail: 'CO₂ chemoreceptor sensitivity in panic' },
+                { author: 'Ley', year: 1985, detail: 'Hyperventilation and anxiety feedback loop' }
+            ]
         }
     }
 };

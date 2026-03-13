@@ -10,6 +10,7 @@ let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0, autodeclar
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
+let userPhone = '';
 let referralEmail = '';
 let currentChapter = 1;
 let particlesActive = true;
@@ -870,12 +871,20 @@ function showApplicationForm() {
 
     const btn = document.getElementById('btn-show-application');
     const form = document.getElementById('application-form-wrapper');
+    const ctaIntro = document.getElementById('cta-intro');
 
     btn.style.display = 'none';
+    if (ctaIntro) ctaIntro.style.display = 'none';
     form.style.display = 'block';
     form.classList.add('fade-in');
     applicationStep = 1;
     applicationData = { problems: userMainProblems };
+
+    // Pre-fill from previously captured data
+    if (userName) applicationData.name = userName;
+    if (userEmail) applicationData.email = userEmail;
+    if (userPhone) applicationData.phone = userPhone;
+
     renderApplicationStep();
 
     setTimeout(() => {
@@ -926,6 +935,21 @@ function renderApplicationStep() {
                     </form>
                 </div>
             `;
+            // Pre-fill fields if data already exists
+            setTimeout(() => {
+                if (applicationData.name) {
+                    const el = document.getElementById('app-name');
+                    if (el) el.value = applicationData.name;
+                }
+                if (applicationData.email) {
+                    const el = document.getElementById('app-email');
+                    if (el) el.value = applicationData.email;
+                }
+                if (applicationData.phone) {
+                    const el = document.getElementById('app-phone');
+                    if (el) el.value = applicationData.phone;
+                }
+            }, 0);
             break;
 
         case 2:
@@ -1083,6 +1107,7 @@ function nextApplicationStep(event) {
             applicationData.referral = document.getElementById('app-referral').value.trim() || null;
             userName = applicationData.name;
             userEmail = applicationData.email;
+            userPhone = applicationData.phone;
             break;
         case 2:
             applicationData.priority = parseInt(document.getElementById('priority-slider').value);
@@ -1213,7 +1238,8 @@ function showResults() {
             levelColor: levelConfig.color,
             score: scores[cat],
             pct: Math.min(100, Math.round((scores[cat] / config.maxScore) * 100)),
-            insight: config.insights[level]
+            insight: config.insights[level],
+            refs: config.references ? config.references[level] : []
         };
     });
 
@@ -1258,6 +1284,10 @@ function showResults() {
                         <div class="category-bar-fill" data-width="${cat.pct}" style="background: ${cat.levelColor}; width: 0%"></div>
                     </div>
                     <p class="category-insight">${cat.insight}</p>
+                    ${cat.refs && cat.refs.length > 0 ? `
+                    <div class="category-refs">
+                        ${cat.refs.map(ref => `<span class="ref-tag">${ref.author}, ${ref.year}</span>`).join('')}
+                    </div>` : ''}
                 </div>
             `).join('')}
         </div>
@@ -1295,14 +1325,16 @@ function showResults() {
 
         <div class="result-cta-section fade-in-section" id="application-section">
             <div class="cta-card" style="border-top: 3px solid ${profile.color}">
-                <div class="cta-badge">Oportunidade Exclusiva</div>
-                ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                <h3>Quer experimentar o poder da respiração consciente?</h3>
-                <p>Aplique para ser <strong>selecionado(a)</strong> para uma demonstração gratuita de breathwork com um profissional certificado do <strong>Instituto Brasileiro de Neurociência e Respiração</strong>.</p>
-                <p class="cta-subtitle">${profile.cta}</p>
+                <div id="cta-intro">
+                    <div class="cta-badge">Oportunidade Exclusiva</div>
+                    ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
+                    <h3>Sessão gratuita de Breathwork</h3>
+                    <p>Aplique para uma demonstração ao vivo com um profissional certificado do <strong>iBreathwork</strong>.</p>
+                    <p class="cta-subtitle">${profile.cta}</p>
+                </div>
 
                 <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
-                    Quero Ser Selecionado para uma Demonstração Gratuita
+                    Quero Participar Gratuitamente
                     <span class="btn-arrow">&rarr;</span>
                 </button>
 

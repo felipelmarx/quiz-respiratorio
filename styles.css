@@ -1446,6 +1446,23 @@ body {
     line-height: 1.6;
 }
 
+.category-refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.ref-tag {
+    font-size: 10px;
+    color: var(--text-dim);
+    background: var(--bg-light);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.01em;
+    line-height: 1.5;
+}
+
 /* Insight Card */
 .insight-card {
     background: var(--bg-card);
