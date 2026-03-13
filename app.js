@@ -1285,6 +1285,30 @@ function getCategoryLevel(category) {
 }
 
 // ---- RESULTS ----
+function getPersonalizedBenefit() {
+    const benefitMap = {
+        ansiedade: 'redução da ansiedade',
+        insonia: 'melhora do sono',
+        estresse: 'controle do estresse',
+        burnout: 'recuperação do burnout',
+        falta_foco: 'aumento do foco e concentração',
+        dores: 'alívio de dores crônicas',
+        sem_energia: 'restauração da energia',
+        impulsividade: 'regulação emocional',
+        aprendizado: 'melhora da capacidade cognitiva'
+    };
+
+    const userProblems = answers['main_problems'] || [];
+    const benefits = userProblems
+        .map(p => benefitMap[p])
+        .filter(Boolean);
+
+    if (benefits.length === 0) return 'melhora da sua saúde respiratória';
+    if (benefits.length === 1) return benefits[0];
+    if (benefits.length === 2) return `${benefits[0]} e ${benefits[1]}`;
+    return `${benefits.slice(0, -1).join(', ')} e ${benefits[benefits.length - 1]}`;
+}
+
 function showResults() {
     showScreen('result-screen');
 
@@ -1293,6 +1317,7 @@ function showResults() {
     const maxScore = 33;
     const riskPct = Math.min(100, Math.round((totalScore / maxScore) * 100));
     const healthScore = Math.max(0, 100 - riskPct);
+    const personalizedBenefit = getPersonalizedBenefit();
 
     // Category analysis
     const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
@@ -1396,8 +1421,7 @@ function showResults() {
                 <div id="cta-intro">
                     <div class="cta-badge">Oportunidade Exclusiva</div>
                     ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                    <h3>Sessão gratuita de Breathwork</h3>
-                    <p>Aplique para uma demonstração ao vivo com um profissional certificado do <strong>iBreathwork</strong>.</p>
+                    <p class="cta-personalized">Com base no seu teste, ${userName ? `<strong>${userName}</strong>, ` : ''}você é um forte candidato a uma sessão de demonstração de <strong>breathwork baseado em evidências</strong> para <strong>${personalizedBenefit}</strong>.</p>
                     <p class="cta-subtitle">${profile.cta}</p>
                 </div>
 

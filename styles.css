@@ -1817,6 +1817,13 @@ body {
     margin-bottom: 16px;
 }
 
+.cta-personalized {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
 .cta-subtitle {
     font-size: 13px !important;
     color: var(--text-dim) !important;
