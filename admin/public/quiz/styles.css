@@ -311,20 +311,6 @@ body {
     background: var(--bg-light);
 }
 
-.btn-stop-timer {
-    background: var(--red);
-    color: white;
-    border: none;
-    padding: 16px 32px;
-    font-size: 15px;
-    font-weight: 600;
-    border-radius: 100px;
-    cursor: pointer;
-    font-family: inherit;
-    margin-top: 20px;
-    animation: pulseGlow 2s infinite;
-    -webkit-tap-highlight-color: transparent;
-}
 
 .pulse-out {
     animation: pulseOut 0.3s forwards;
@@ -993,53 +979,6 @@ body {
     opacity: 0.85;
 }
 
-/* Tolerance Options */
-.tolerance-results {
-    flex-direction: column;
-    gap: 10px;
-}
-
-.tolerance-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 18px;
-    background: var(--bg-card);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: inherit;
-    color: var(--text);
-    transition: all 0.25s;
-    -webkit-tap-highlight-color: transparent;
-    box-shadow: var(--shadow);
-}
-
-.tolerance-option:active {
-    transform: scale(0.98);
-    border-color: var(--primary);
-}
-
-.tolerance-option.selected {
-    border-color: var(--primary);
-    background: var(--green-light);
-}
-
-.tol-level {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.tol-label {
-    font-size: 14px;
-}
-
-.tolerance-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
 
 /* Mode Selection */
 .mode-selection-icon {
@@ -1804,11 +1743,6 @@ body {
     }
 
     .exercise-choice:hover {
-        border-color: var(--border-active);
-        background: var(--green-light);
-    }
-
-    .tolerance-option:hover {
         border-color: var(--border-active);
         background: var(--green-light);
     }

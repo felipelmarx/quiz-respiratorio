@@ -112,8 +112,6 @@ async function saveAnonymousResponse() {
         return;
     }
 
-    const instructor = getInstructorConfig();
-    const profile = getProfile();
     const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
 
     const responseData = {
@@ -830,7 +828,6 @@ function finishQuiz() {
 // ---- ANALYZING ANIMATION ----
 function runAnalyzingAnimation() {
     const stepsContainer = document.getElementById('analyzing-steps');
-    const progressRing = document.getElementById('analyzing-progress');
     let stepIndex = 0;
 
     function showStep() {
@@ -846,11 +843,6 @@ function runAnalyzingAnimation() {
 
         const step = ANALYZING_STEPS[stepIndex];
         const pct = Math.round(((stepIndex + 1) / ANALYZING_STEPS.length) * 100);
-
-        // Update progress ring
-        if (progressRing) {
-            progressRing.style.setProperty('--progress', pct);
-        }
 
         const stepDiv = document.createElement('div');
         stepDiv.className = 'analyzing-step fade-in';
@@ -872,20 +864,6 @@ function runAnalyzingAnimation() {
     setTimeout(showStep, 500);
 }
 
-function calculateFindings() {
-    let findings = 0;
-    if (scores.padrao > 4) findings += 3;
-    else if (scores.padrao > 2) findings += 2;
-    else findings += 1;
-    if (scores.sintomas > 6) findings += 3;
-    else if (scores.sintomas > 3) findings += 2;
-    else findings += 1;
-    if (scores.consciencia > 1) findings += 2;
-    else findings += 1;
-    if (scores.tolerancia > 2) findings += 2;
-    else findings += 1;
-    return Math.max(3, Math.min(9, findings));
-}
 
 // ---- APPLICATION FORM (Multi-step) ----
 let applicationStep = 0;
@@ -1092,7 +1070,7 @@ function selectValueOption(btn) {
     }, 300);
 }
 
-function toggleSchedule(btn) {
+function toggleSchedule(btn, type) {
     haptic('light');
     btn.classList.toggle('active');
 }
@@ -1117,6 +1095,15 @@ function nextApplicationStep(event) {
         case 3:
             const consequences = Array.from(document.querySelectorAll('.consequence-option.active'))
                 .map(b => b.dataset.value);
+            if (consequences.length === 0) {
+                document.querySelector('.consequence-grid').style.outline = '2px solid #DC3545';
+                document.querySelector('.consequence-grid').style.outlineOffset = '4px';
+                setTimeout(() => {
+                    const grid = document.querySelector('.consequence-grid');
+                    if (grid) grid.style.outline = 'none';
+                }, 1500);
+                return;
+            }
             applicationData.consequences = consequences;
             break;
     }
