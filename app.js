@@ -237,10 +237,7 @@ function initParticles() {
     }
 
     function animate() {
-        if (!particlesActive) {
-            requestAnimationFrame(animate);
-            return;
-        }
+        if (!particlesActive) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         breathPhase += 0.008;
 
@@ -832,10 +829,8 @@ function runAnalyzingAnimation() {
 
     function showStep() {
         if (stepIndex >= ANALYZING_STEPS.length) {
-            setTimeout(() => {
-                // Save anonymous response immediately
-                saveAnonymousResponse();
-                // Go directly to results
+            setTimeout(async () => {
+                await saveAnonymousResponse();
                 showResults();
             }, 600);
             return;

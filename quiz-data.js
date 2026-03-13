@@ -387,7 +387,7 @@ const RESULT_PROFILES = {
         cta: 'Um programa estruturado de reeducação respiratória pode transformar sua relação com a ansiedade. Resultados aparecem entre 2-4 semanas.'
     },
     severe: {
-        range: [24, 40],
+        range: [24, 33],
         title: 'Disfunção Respiratória Severa',
         emoji: '🚨',
         color: '#c82333',
