@@ -832,7 +832,7 @@ function runAnalyzingAnimation() {
         if (stepIndex >= ANALYZING_STEPS.length) {
             setTimeout(async () => {
                 await saveAnonymousResponse();
-                showResults();
+                showLeadCapture();
             }, 600);
             return;
         }
@@ -861,6 +861,64 @@ function runAnalyzingAnimation() {
 }
 
 
+// ---- LEAD CAPTURE (before results) ----
+function showLeadCapture() {
+    const wrapper = document.querySelector('.lead-wrapper');
+    const analyzing = document.getElementById('analyzing-animation');
+
+    // Fade out analyzing animation
+    analyzing.classList.add('fade-out');
+
+    setTimeout(() => {
+        analyzing.style.display = 'none';
+
+        // Build lead capture form
+        const leadForm = document.createElement('div');
+        leadForm.className = 'lead-capture fade-in';
+        leadForm.innerHTML = `
+            <div class="lead-capture-card">
+                <div class="lead-capture-icon">📊</div>
+                <h2 class="lead-capture-title">Seu resultado está pronto!</h2>
+                <p class="lead-capture-desc">Preencha abaixo para ver sua análise personalizada.</p>
+                <form id="lead-capture-form" onsubmit="submitLeadCapture(event)">
+                    <div class="form-group">
+                        <label for="lead-name">Seu nome</label>
+                        <input type="text" id="lead-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-email">Seu melhor e-mail</label>
+                        <input type="email" id="lead-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-phone">WhatsApp</label>
+                        <input type="tel" id="lead-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full btn-glow">
+                        Ver Meu Resultado
+                        <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </form>
+                <p class="lead-capture-trust">Seus dados estão seguros e não serão compartilhados.</p>
+            </div>
+        `;
+        wrapper.appendChild(leadForm);
+    }, 400);
+}
+
+function submitLeadCapture(event) {
+    event.preventDefault();
+    haptic('light');
+
+    userName = document.getElementById('lead-name').value.trim();
+    userEmail = document.getElementById('lead-email').value.trim();
+    userPhone = document.getElementById('lead-phone').value.trim();
+
+    trackEvent('lead_captured', { source: 'pre_result' });
+
+    showResults();
+}
+
+
 // ---- APPLICATION FORM (Multi-step) ----
 let applicationStep = 0;
 let applicationData = {};
@@ -877,13 +935,17 @@ function showApplicationForm() {
     if (ctaIntro) ctaIntro.style.display = 'none';
     form.style.display = 'block';
     form.classList.add('fade-in');
-    applicationStep = 1;
     applicationData = { problems: userMainProblems };
 
-    // Pre-fill from previously captured data
-    if (userName) applicationData.name = userName;
-    if (userEmail) applicationData.email = userEmail;
-    if (userPhone) applicationData.phone = userPhone;
+    // If lead data already captured, skip step 1
+    if (userName && userEmail && userPhone) {
+        applicationData.name = userName;
+        applicationData.email = userEmail;
+        applicationData.phone = userPhone;
+        applicationStep = 2;
+    } else {
+        applicationStep = 1;
+    }
 
     renderApplicationStep();
 
@@ -895,6 +957,12 @@ function showApplicationForm() {
 function renderApplicationStep() {
     const wrapper = document.getElementById('application-form-wrapper');
     const profile = getProfile();
+
+    // Step indicator: if step 1 was skipped, adjust numbering
+    const skipContact = (userName && userEmail && userPhone);
+    const totalSteps = skipContact ? 4 : 5;
+    const displayStep = skipContact ? applicationStep - 1 : applicationStep;
+    const stepLabel = (step) => `Passo ${step} de ${totalSteps}`;
 
     // Adaptive problem text based on user's self-declaration
     const problemLabels = {
@@ -910,7 +978,7 @@ function renderApplicationStep() {
         case 1:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 1 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Seus dados para contato</h3>
                     <form id="app-step-form" onsubmit="nextApplicationStep(event)">
                         <div class="form-group">
@@ -955,7 +1023,7 @@ function renderApplicationStep() {
         case 2:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 2 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">De 0 a 10, qual a prioridade de resolver ${problemText} agora?</h3>
                     <p class="app-step-desc">0 = posso deixar pra depois &nbsp;&nbsp; 10 = preciso resolver agora</p>
                     <div class="priority-slider-container">
@@ -976,7 +1044,7 @@ function renderApplicationStep() {
         case 3:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 3 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Se ${problemText} piorasse na sua vida, o que estaria em jogo?</h3>
                     <p class="app-step-desc">Selecione tudo que se aplica:</p>
                     <div class="consequence-grid">
@@ -1007,7 +1075,7 @@ function renderApplicationStep() {
         case 4:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 4 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Quanto valeria para você resolver ${problemText} de uma vez por todas?</h3>
                     <div class="value-options">
                         ${[
@@ -1031,7 +1099,7 @@ function renderApplicationStep() {
         case 5:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 5 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Se você for selecionado(a) para uma demonstração gratuita, quando poderia participar?</h3>
                     <div class="schedule-section">
                         <p class="schedule-label">Dias da semana:</p>
@@ -1247,7 +1315,7 @@ function showResults() {
     container.innerHTML = `
         <div class="result-hero">
             <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>você</strong></p>
+            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
 
             <div class="score-ring-container">
                 <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
