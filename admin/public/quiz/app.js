@@ -1030,7 +1030,7 @@ function launchConfetti() {
 // ---- SOCIAL SHARING ----
 function getShareText() {
     const profile = getProfile();
-    return `Fiz o Teste de Ansiedade por Disfunção Respiratória e descobri que meu padrão é: ${profile.title}. Faça o seu teste gratuito!`;
+    return `Acabei de fazer o Desafio de Expiração e um teste para ver se a respiração está funcional.\n\nEsse é meu desafio para você:`;
 }
 
 function shareWhatsApp() {

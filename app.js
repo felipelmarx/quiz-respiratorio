@@ -13,8 +13,6 @@ let userEmail = '';
 let referralEmail = '';
 let currentChapter = 1;
 let particlesActive = true;
-let toleranceTimer = null;
-let toleranceSeconds = 0;
 
 // ---- SUPABASE CONFIG (plug your keys here) ----
 const SUPABASE_CONFIG = {
@@ -545,29 +543,21 @@ function renderToleranceTest(q, container) {
                 `).join('')}
             </div>
 
-            <div class="tolerance-timer-area" id="timer-area" style="display:none;">
-                <div class="timer-circle" id="timer-circle">
-                    <div class="timer-inner">
-                        <span class="timer-seconds" id="timer-seconds">0</span>
-                        <span class="timer-label">segundos</span>
-                    </div>
+            <div class="tolerance-input-area" id="input-area">
+                <p class="tolerance-input-label">Quantos segundos você conseguiu?</p>
+                <div class="tolerance-numpad">
+                    <input type="number" id="tolerance-input" class="tolerance-seconds-input"
+                        min="1" max="120" placeholder="0" inputmode="numeric" />
+                    <span class="tolerance-input-unit">segundos</span>
                 </div>
-                <button class="btn-stop-timer" id="btn-stop" onclick="stopToleranceTimer()">
-                    Parar Cronômetro
-                </button>
-            </div>
-
-            <div class="tolerance-actions" id="tolerance-actions">
-                <button class="btn-primary btn-glow" onclick="startToleranceTimer()">
-                    Iniciar Cronômetro
+                <p class="tolerance-input-hint">Máximo: 120 segundos</p>
+                <button class="btn-primary btn-glow" onclick="submitToleranceTime()">
+                    Confirmar meu tempo
                     <span class="btn-arrow">&rarr;</span>
                 </button>
-                <button class="btn-skip" onclick="showToleranceOptions()">
-                    Prefiro selecionar meu tempo
-                </button>
             </div>
 
-            <div class="tolerance-scale" id="tolerance-scale" style="display:none;">
+            <div class="tolerance-scale" id="tolerance-scale">
                 <div class="scale-bar">
                     <div class="scale-segment" style="background: #DC3545; flex: 10;">
                         <span>10s</span>
@@ -587,50 +577,25 @@ function renderToleranceTest(q, container) {
                     </div>
                 </div>
             </div>
-
-            <div class="tolerance-results" id="tolerance-results" style="display:none;">
-                ${q.options.map((opt, i) => `
-                    <button class="tolerance-option" onclick="selectToleranceResult(${currentQuestion}, ${i})">
-                        <span class="tol-level" style="color: ${Object.values(q.explanation.scale)[i].color}">${opt.level}</span>
-                        <span class="tol-label">${opt.label}</span>
-                    </button>
-                `).join('')}
-            </div>
         </div>
     `;
 }
 
-function startToleranceTimer() {
-    haptic('medium');
-    document.getElementById('tolerance-actions').style.display = 'none';
-    document.getElementById('timer-area').style.display = 'flex';
-    document.getElementById('tolerance-scale').style.display = 'block';
+function submitToleranceTime() {
+    const input = document.getElementById('tolerance-input');
+    const seconds = parseInt(input.value);
 
-    toleranceSeconds = 0;
-    const display = document.getElementById('timer-seconds');
-    const circle = document.getElementById('timer-circle');
+    if (!seconds || seconds < 1) {
+        input.style.borderColor = '#DC3545';
+        input.placeholder = 'Digite um número';
+        return;
+    }
+    if (seconds > 120) {
+        input.value = 120;
+        return;
+    }
 
-    toleranceTimer = setInterval(() => {
-        toleranceSeconds++;
-        display.textContent = toleranceSeconds;
-
-        // Color changes based on time
-        if (toleranceSeconds < 10) {
-            circle.style.borderColor = '#DC3545';
-        } else if (toleranceSeconds < 25) {
-            circle.style.borderColor = '#FFC107';
-        } else if (toleranceSeconds < 45) {
-            circle.style.borderColor = '#4A7C59';
-        } else {
-            circle.style.borderColor = '#2D5A3D';
-        }
-    }, 1000);
-}
-
-function stopToleranceTimer() {
-    clearInterval(toleranceTimer);
     haptic('heavy');
-    const seconds = toleranceSeconds;
 
     // Auto-select based on time
     let optionIndex;
@@ -643,7 +608,7 @@ function stopToleranceTimer() {
     const opt = q.options[optionIndex];
 
     // Show result
-    document.getElementById('timer-area').innerHTML = `
+    document.getElementById('input-area').innerHTML = `
         <div class="timer-result fade-in">
             <div class="timer-result-seconds">${seconds}s</div>
             <div class="timer-result-level" style="color: ${Object.values(q.explanation.scale)[optionIndex].color}">
@@ -664,32 +629,6 @@ function stopToleranceTimer() {
     }, 1500);
 }
 
-function showToleranceOptions() {
-    document.getElementById('tolerance-actions').style.display = 'none';
-    document.getElementById('tolerance-results').style.display = 'flex';
-    document.getElementById('tolerance-scale').style.display = 'block';
-}
-
-function selectToleranceResult(qIndex, optIndex) {
-    const q = QUIZ_QUESTIONS[qIndex];
-    const opt = q.options[optIndex];
-
-    // Disable buttons
-    document.querySelectorAll('.tolerance-option').forEach((btn, i) => {
-        btn.disabled = true;
-        if (i === optIndex) btn.classList.add('selected');
-    });
-
-    answers[q.id] = opt.value;
-    scores[q.category] += opt.score;
-    totalScore += opt.score;
-
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 600);
-}
 
 // ---- OPTION SELECTION ----
 function selectOption(qIndex, optIndex) {
@@ -1214,7 +1153,7 @@ function launchConfetti() {
 // ---- SOCIAL SHARING ----
 function getShareText() {
     const profile = getProfile();
-    return `Fiz o Teste de Ansiedade por Disfunção Respiratória e descobri que meu padrão é: ${profile.title}. Faça o seu teste gratuito!`;
+    return `Acabei de fazer o Desafio de Expiração e um teste para ver se a respiração está funcional.\n\nEsse é meu desafio para você:`;
 }
 
 function shareWhatsApp() {
