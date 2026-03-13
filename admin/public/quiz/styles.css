@@ -7,6 +7,7 @@
 :root {
     --primary: #2D5A3D;
     --primary-dark: #1e4a2e;
+    --primary-light: #6ba378;
     --secondary: #4A7C59;
     --green-light: #E8F5E9;
     --bg: #FFFFFF;
@@ -293,23 +294,6 @@ body {
     transform: scale(0.97);
 }
 
-.btn-skip {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 12px 24px;
-    font-size: 14px;
-    border-radius: 100px;
-    cursor: pointer;
-    font-family: inherit;
-    margin-top: 12px;
-    transition: all 0.3s;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.btn-skip:active {
-    background: var(--bg-light);
-}
 
 
 .pulse-out {
@@ -1259,29 +1243,6 @@ body {
     color: white;
 }
 
-/* Lead Form */
-.lead-form-container {
-    text-align: center;
-}
-
-.lead-icon {
-    font-size: 40px;
-    margin-bottom: 12px;
-}
-
-.lead-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    color: var(--text);
-}
-
-.lead-subtitle {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 28px;
-}
 
 .form-group {
     margin-bottom: 16px;
@@ -1570,15 +1531,6 @@ body {
     margin-bottom: 12px;
 }
 
-.cta-coming-soon {
-    font-size: 14px;
-    color: var(--primary);
-    font-style: italic;
-    padding: 16px;
-    background: var(--green-light);
-    border-radius: var(--radius-xs);
-    border: 1px solid rgba(45, 90, 61, 0.15);
-}
 
 .cta-card h3 {
     font-size: 20px;
