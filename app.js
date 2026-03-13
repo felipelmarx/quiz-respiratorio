@@ -524,6 +524,18 @@ function renderToleranceTest(q, container) {
                 <h2 class="tolerance-title">${q.instructions.title}</h2>
             </div>
 
+            <div class="tolerance-video-container">
+                <p class="tolerance-video-label">Assista como fazer o teste:</p>
+                <div class="tolerance-video-wrapper">
+                    <iframe
+                        src="https://www.youtube.com/embed/vQwWXKncwK0?rel=0&modestbranding=1&playsinline=1&controls=1"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+
             <div class="tolerance-instructions">
                 ${q.instructions.steps.map((step, i) => `
                     <div class="tolerance-step">
