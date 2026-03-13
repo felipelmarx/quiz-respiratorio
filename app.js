@@ -6,13 +6,15 @@
 // ---- STATE ----
 let currentQuestion = 0;
 let answers = {};
-let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0 };
+let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0, autodeclaracao: 0 };
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
 let referralEmail = '';
 let currentChapter = 1;
 let particlesActive = true;
+let showExplanations = true;
+let userMainProblems = [];
 
 // ---- SUPABASE CONFIG (plug your keys here) ----
 const SUPABASE_CONFIG = {
@@ -295,8 +297,51 @@ function startQuiz() {
     btn.classList.add('pulse-out');
     setTimeout(() => {
         showScreen('quiz-screen');
-        showQuestion(0);
+        showModeSelection();
     }, 300);
+}
+
+function showModeSelection() {
+    const container = document.getElementById('question-container');
+    container.innerHTML = `
+        <div class="question-card fade-in" style="text-align: center;">
+            <div class="mode-selection-icon">🧠</div>
+            <h2 class="question-text">Como você prefere fazer o teste?</h2>
+            <p class="mode-selection-desc">Após cada resposta, podemos mostrar uma explicação científica sobre o que aquela pergunta revela sobre sua respiração.</p>
+            <div class="options-grid">
+                <button class="option-card mode-option" onclick="selectMode(true)">
+                    <span class="option-letter">A</span>
+                    <span class="option-label">Com explicações</span>
+                    <span class="mode-detail">Aprenda sobre cada aspecto da sua respiração</span>
+                </button>
+                <button class="option-card mode-option" onclick="selectMode(false)">
+                    <span class="option-letter">B</span>
+                    <span class="option-label">Apenas o diagnóstico</span>
+                    <span class="mode-detail">Mais rápido — vá direto ao resultado</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function selectMode(withExplanations) {
+    haptic('light');
+    showExplanations = withExplanations;
+    trackEvent('quiz_mode_selected', { mode: withExplanations ? 'with_explanations' : 'fast' });
+
+    document.querySelectorAll('.mode-option').forEach((btn, i) => {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        if ((withExplanations && i === 0) || (!withExplanations && i === 1)) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.add('dimmed');
+        }
+    });
+
+    setTimeout(() => {
+        showQuestion(0);
+    }, 400);
 }
 
 // ---- PROGRESS ----
@@ -373,6 +418,8 @@ function renderQuestion(q, index) {
         renderBreathingExercise(q, container);
     } else if (q.type === 'tolerance_test') {
         renderToleranceTest(q, container);
+    } else if (q.type === 'multi_select') {
+        renderMultiSelect(q, index, container);
     } else {
         renderStandardQuestion(q, index, container, intro);
     }
@@ -400,6 +447,74 @@ function renderStandardQuestion(q, index, container, intro) {
             </div>
         </div>
     `;
+}
+
+// ---- MULTI SELECT (Self-declaration) ----
+function renderMultiSelect(q, index, container) {
+    container.innerHTML = `
+        <div class="question-card fade-in">
+            <div class="question-chapter-tag">🎯 Seus Desafios</div>
+            <h2 class="question-text">${q.question}</h2>
+            <div class="multi-select-grid">
+                ${q.options.map((opt, i) => `
+                    <button class="multi-select-option" data-value="${opt.value}" onclick="toggleMultiSelect(this)">
+                        <span class="multi-icon">${opt.icon}</span>
+                        <span class="multi-label">${opt.label}</span>
+                        <span class="multi-check"></span>
+                    </button>
+                `).join('')}
+            </div>
+            <button class="btn-primary btn-glow btn-full multi-select-confirm" id="btn-confirm-multi" onclick="confirmMultiSelect(${index})">
+                Continuar
+                <span class="btn-arrow">&rarr;</span>
+            </button>
+        </div>
+    `;
+}
+
+function toggleMultiSelect(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+    const check = btn.querySelector('.multi-check');
+    check.innerHTML = btn.classList.contains('active') ? '&#10003;' : '';
+}
+
+function confirmMultiSelect(qIndex) {
+    const selected = document.querySelectorAll('.multi-select-option.active');
+    if (selected.length === 0) {
+        // Highlight that at least one must be selected
+        document.querySelector('.multi-select-grid').style.outline = '2px solid #DC3545';
+        document.querySelector('.multi-select-grid').style.outlineOffset = '4px';
+        setTimeout(() => {
+            document.querySelector('.multi-select-grid').style.outline = 'none';
+        }, 1500);
+        return;
+    }
+
+    haptic('medium');
+    userMainProblems = Array.from(selected).map(btn => btn.dataset.value);
+
+    const q = QUIZ_QUESTIONS[qIndex];
+    answers[q.id] = userMainProblems;
+
+    trackEvent('quiz_self_declaration', { problems: userMainProblems });
+
+    // Disable all options
+    document.querySelectorAll('.multi-select-option').forEach(btn => {
+        btn.style.pointerEvents = 'none';
+        if (!btn.classList.contains('active')) btn.classList.add('dimmed');
+    });
+    document.getElementById('btn-confirm-multi').style.display = 'none';
+
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, false, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 400);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 400);
+    }
 }
 
 // ---- BREATHING EXERCISE ----
@@ -506,11 +621,15 @@ function selectExerciseOption(qIndex, optIndex) {
     const explanationKey = opt.value === 'chest' ? 'chest' : 'belly';
     const explanation = q.explanation[explanationKey];
 
-    setTimeout(() => {
-        showExplanation(explanation.text, explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 600);
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(explanation.text, explanation.reference, opt.score >= 2, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 600);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 600);
+    }
 }
 
 // ---- TOLERANCE TEST ----
@@ -622,11 +741,15 @@ function submitToleranceTime() {
     scores[q.category] += opt.score;
     totalScore += opt.score;
 
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(currentQuestion + 1);
-        });
-    }, 1500);
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
+                showQuestion(currentQuestion + 1);
+            });
+        }, 1500);
+    } else {
+        setTimeout(() => showQuestion(currentQuestion + 1), 1500);
+    }
 }
 
 
@@ -654,12 +777,16 @@ function selectOption(qIndex, optIndex) {
     scores[q.category] += opt.score;
     totalScore += opt.score;
 
-    // Show explanation after delay
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 500);
+    // Show explanation after delay (or skip if fast mode)
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 500);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 500);
+    }
 }
 
 // ---- EXPLANATION OVERLAY ----
@@ -760,7 +887,10 @@ function calculateFindings() {
     return Math.max(3, Math.min(9, findings));
 }
 
-// ---- APPLICATION FORM ----
+// ---- APPLICATION FORM (Multi-step) ----
+let applicationStep = 0;
+let applicationData = {};
+
 function showApplicationForm() {
     haptic('medium');
     trackEvent('application_form_opened', { profile: getProfile().title });
@@ -771,61 +901,295 @@ function showApplicationForm() {
     btn.style.display = 'none';
     form.style.display = 'block';
     form.classList.add('fade-in');
+    applicationStep = 1;
+    applicationData = { problems: userMainProblems };
+    renderApplicationStep();
 
-    // Scroll to form
     setTimeout(() => {
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
 
-function submitApplication(event) {
-    event.preventDefault();
+function renderApplicationStep() {
+    const wrapper = document.getElementById('application-form-wrapper');
+    const profile = getProfile();
+
+    // Adaptive problem text based on user's self-declaration
+    const problemLabels = {
+        ansiedade: 'ansiedade', insonia: 'insônia', estresse: 'estresse constante',
+        burnout: 'burnout', falta_foco: 'falta de foco', dores: 'dores crônicas',
+        sem_energia: 'falta de energia', impulsividade: 'impulsividade', aprendizado: 'dificuldade de aprendizado'
+    };
+    const problemText = userMainProblems.length > 0
+        ? userMainProblems.map(p => problemLabels[p] || p).join(', ')
+        : 'esses sintomas';
+
+    switch (applicationStep) {
+        case 1:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 1 de 5</div>
+                    <h3 class="app-step-title">Seus dados para contato</h3>
+                    <form id="app-step-form" onsubmit="nextApplicationStep(event)">
+                        <div class="form-group">
+                            <label for="app-name">Seu nome</label>
+                            <input type="text" id="app-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-email">Seu melhor e-mail</label>
+                            <input type="email" id="app-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-phone">WhatsApp</label>
+                            <input type="tel" id="app-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
+                            <input type="email" id="app-referral" placeholder="email de quem te indicou" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-primary btn-full btn-glow">
+                            Continuar <span class="btn-arrow">&rarr;</span>
+                        </button>
+                    </form>
+                </div>
+            `;
+            break;
+
+        case 2:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 2 de 5</div>
+                    <h3 class="app-step-title">De 0 a 10, qual a prioridade de resolver ${problemText} agora?</h3>
+                    <p class="app-step-desc">0 = posso deixar pra depois &nbsp;&nbsp; 10 = preciso resolver agora</p>
+                    <div class="priority-slider-container">
+                        <input type="range" id="priority-slider" min="0" max="10" value="5" class="priority-slider" oninput="updatePriorityValue(this.value)">
+                        <div class="priority-labels">
+                            <span>0</span>
+                            <span class="priority-current" id="priority-value">5</span>
+                            <span>10</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" onclick="nextApplicationStep()">
+                        Continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+            break;
+
+        case 3:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 3 de 5</div>
+                    <h3 class="app-step-title">Se ${problemText} piorasse na sua vida, o que estaria em jogo?</h3>
+                    <p class="app-step-desc">Selecione tudo que se aplica:</p>
+                    <div class="consequence-grid">
+                        ${[
+                            { value: 'relacionamento', label: 'Relacionamento / Família', icon: '❤️' },
+                            { value: 'dinheiro', label: 'Perda de dinheiro / Renda', icon: '💰' },
+                            { value: 'carreira', label: 'Carreira / Trabalho', icon: '💼' },
+                            { value: 'saude', label: 'Saúde física', icon: '🏥' },
+                            { value: 'saude_mental', label: 'Saúde mental', icon: '🧠' },
+                            { value: 'qualidade_vida', label: 'Qualidade de vida', icon: '🌅' },
+                            { value: 'autoestima', label: 'Autoestima / Confiança', icon: '💪' },
+                            { value: 'produtividade', label: 'Produtividade / Performance', icon: '📈' }
+                        ].map(c => `
+                            <button class="consequence-option" data-value="${c.value}" onclick="toggleConsequence(this)">
+                                <span class="consequence-icon">${c.icon}</span>
+                                <span class="consequence-label">${c.label}</span>
+                                <span class="multi-check"></span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" onclick="nextApplicationStep()">
+                        Continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+            break;
+
+        case 4:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 4 de 5</div>
+                    <h3 class="app-step-title">Quanto valeria para você resolver ${problemText} de uma vez por todas?</h3>
+                    <div class="value-options">
+                        ${[
+                            { value: 'nao_pagaria', label: 'Não pagaria nada' },
+                            { value: 'ate_100', label: 'Até R$ 100' },
+                            { value: '100_500', label: 'R$ 100 a R$ 500' },
+                            { value: '500_1000', label: 'R$ 500 a R$ 1.000' },
+                            { value: '1000_3000', label: 'R$ 1.000 a R$ 3.000' },
+                            { value: 'acima_3000', label: 'Acima de R$ 3.000' },
+                            { value: 'nao_tem_preco', label: 'Não tem preço — resolveria qualquer coisa' }
+                        ].map(v => `
+                            <button class="value-option" data-value="${v.value}" onclick="selectValueOption(this)">
+                                ${v.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 5:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 5 de 5</div>
+                    <h3 class="app-step-title">Se você for selecionado(a) para uma demonstração gratuita, quando poderia participar?</h3>
+                    <div class="schedule-section">
+                        <p class="schedule-label">Dias da semana:</p>
+                        <div class="schedule-days">
+                            ${['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'].map(d => `
+                                <button class="schedule-day" data-value="${d.toLowerCase()}" onclick="toggleSchedule(this, 'day')">${d}</button>
+                            `).join('')}
+                        </div>
+                        <p class="schedule-label" style="margin-top: 16px;">Período:</p>
+                        <div class="schedule-periods">
+                            <button class="schedule-period" data-value="manha" onclick="toggleSchedule(this, 'period')">🌅 Manhã</button>
+                            <button class="schedule-period" data-value="tarde" onclick="toggleSchedule(this, 'period')">☀️ Tarde</button>
+                            <button class="schedule-period" data-value="noite" onclick="toggleSchedule(this, 'period')">🌙 Noite</button>
+                        </div>
+                    </div>
+                    <div class="commitment-section">
+                        <label class="commitment-checkbox">
+                            <input type="checkbox" id="commitment-check">
+                            <span class="commitment-text">Eu me comprometo a, caso seja selecionado(a) para a sessão gratuita, <strong>comparecer e dar o meu melhor</strong>.</span>
+                        </label>
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" id="btn-submit-final" onclick="submitFinalApplication()">
+                        Enviar Minha Aplicação <span class="btn-arrow">&rarr;</span>
+                    </button>
+                    <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
+                </div>
+            `;
+            break;
+    }
+
+    setTimeout(() => {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function updatePriorityValue(val) {
+    document.getElementById('priority-value').textContent = val;
+}
+
+function toggleConsequence(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+    const check = btn.querySelector('.multi-check');
+    check.innerHTML = btn.classList.contains('active') ? '&#10003;' : '';
+}
+
+function selectValueOption(btn) {
+    haptic('light');
+    document.querySelectorAll('.value-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applicationData.perceived_value = btn.dataset.value;
+    setTimeout(() => {
+        applicationStep++;
+        renderApplicationStep();
+    }, 300);
+}
+
+function toggleSchedule(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+}
+
+function nextApplicationStep(event) {
+    if (event) event.preventDefault();
+    haptic('light');
+
+    // Collect data from current step
+    switch (applicationStep) {
+        case 1:
+            applicationData.name = document.getElementById('app-name').value.trim();
+            applicationData.email = document.getElementById('app-email').value.trim();
+            applicationData.phone = document.getElementById('app-phone').value.trim();
+            applicationData.referral = document.getElementById('app-referral').value.trim() || null;
+            userName = applicationData.name;
+            userEmail = applicationData.email;
+            break;
+        case 2:
+            applicationData.priority = parseInt(document.getElementById('priority-slider').value);
+            break;
+        case 3:
+            const consequences = Array.from(document.querySelectorAll('.consequence-option.active'))
+                .map(b => b.dataset.value);
+            applicationData.consequences = consequences;
+            break;
+    }
+
+    applicationStep++;
+    renderApplicationStep();
+}
+
+function submitFinalApplication() {
     haptic('success');
 
-    userName = document.getElementById('app-name').value.trim();
-    userEmail = document.getElementById('app-email').value.trim();
-    const phone = document.getElementById('app-phone').value.trim();
-    referralEmail = document.getElementById('app-referral').value.trim();
+    // Collect scheduling data
+    const selectedDays = Array.from(document.querySelectorAll('.schedule-day.active'))
+        .map(b => b.dataset.value);
+    const selectedPeriods = Array.from(document.querySelectorAll('.schedule-period.active'))
+        .map(b => b.dataset.value);
+    const committed = document.getElementById('commitment-check').checked;
 
-    const instructor = getInstructorConfig();
+    applicationData.available_days = selectedDays;
+    applicationData.available_periods = selectedPeriods;
+    applicationData.committed = committed;
+
     const leadData = {
-        name: userName,
-        email: userEmail,
-        phone: phone || null,
-        referral: referralEmail || null,
+        name: applicationData.name,
+        email: applicationData.email,
+        phone: applicationData.phone || null,
+        referral: applicationData.referral || null,
+        extra_data: {
+            problems: applicationData.problems,
+            priority: applicationData.priority,
+            consequences: applicationData.consequences,
+            perceived_value: applicationData.perceived_value,
+            available_days: applicationData.available_days,
+            available_periods: applicationData.available_periods,
+            committed: applicationData.committed
+        }
     };
 
     console.log('Application submitted:', leadData);
-
-    // Save to Supabase (non-blocking)
     saveApplication(leadData);
 
-    // Track conversion
     trackEvent('application_submitted', {
         profile: getProfile().title,
         total_score: totalScore,
-        has_referral: !!referralEmail
+        priority: applicationData.priority,
+        perceived_value: applicationData.perceived_value,
+        committed: committed
     });
 
-    // Meta Pixel standard event
     if (window.fbq) {
         fbq('track', 'Lead', { content_name: 'quiz_respiratorio' });
     }
 
     // Show confirmation
-    document.getElementById('application-form-wrapper').style.display = 'none';
-    const confirmation = document.getElementById('application-confirmation');
-    confirmation.style.display = 'block';
-    confirmation.classList.add('fade-in');
-    document.getElementById('confirmation-name').textContent = userName;
+    const wrapper = document.getElementById('application-form-wrapper');
+    wrapper.innerHTML = `
+        <div class="application-confirmation fade-in">
+            <div class="confirmation-icon">✅</div>
+            <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
+            <p class="confirmation-text">
+                Obrigado, <strong>${applicationData.name}</strong>! Um profissional do
+                <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
+                entrará em contato pelo seu WhatsApp se você for selecionado(a).
+            </p>
+            <p class="confirmation-note">Fique atento ao seu WhatsApp nos próximos dias.</p>
+        </div>
+    `;
 
-    // Update greeting with name
     const greeting = document.querySelector('.result-greeting strong');
-    if (greeting) greeting.textContent = userName;
+    if (greeting) greeting.textContent = applicationData.name;
 
-    // Scroll to confirmation
     setTimeout(() => {
-        confirmation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
 
@@ -961,40 +1325,7 @@ function showResults() {
                 </button>
 
                 <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
-                    <form id="application-form" onsubmit="submitApplication(event)">
-                        <div class="form-group">
-                            <label for="app-name">Seu nome</label>
-                            <input type="text" id="app-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
-                        </div>
-                        <div class="form-group">
-                            <label for="app-email">Seu melhor e-mail</label>
-                            <input type="email" id="app-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
-                        </div>
-                        <div class="form-group">
-                            <label for="app-phone">WhatsApp</label>
-                            <input type="tel" id="app-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
-                        </div>
-                        <div class="form-group">
-                            <label for="app-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
-                            <input type="email" id="app-referral" placeholder="email de quem te indicou" autocomplete="off">
-                        </div>
-                        <button type="submit" class="btn-primary btn-full btn-glow" id="btn-submit-application">
-                            Enviar Minha Aplicação
-                            <span class="btn-arrow">&rarr;</span>
-                        </button>
-                        <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
-                    </form>
-                </div>
-
-                <div class="application-confirmation" id="application-confirmation" style="display:none;">
-                    <div class="confirmation-icon">✅</div>
-                    <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
-                    <p class="confirmation-text">
-                        Obrigado, <strong id="confirmation-name"></strong>! Um profissional do
-                        <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
-                        entrará em contato pelo seu WhatsApp se você for selecionado(a).
-                    </p>
-                    <p class="confirmation-note">Fique atento ao seu WhatsApp nos próximos dias.</p>
+                    <!-- Multi-step form rendered dynamically -->
                 </div>
             </div>
         </div>

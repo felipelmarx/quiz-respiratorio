@@ -6,19 +6,21 @@
 // ---- STATE ----
 let currentQuestion = 0;
 let answers = {};
-let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0 };
+let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0, autodeclaracao: 0 };
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
 let referralEmail = '';
 let currentChapter = 1;
 let particlesActive = true;
-let toleranceTimer = null;
-let toleranceSeconds = 0;
+let showExplanations = true;
+let userMainProblems = [];
 
-// ---- API CONFIG ----
-const API_CONFIG = {
-    submitUrl: '/api/quiz/submit'
+// ---- SUPABASE CONFIG (plug your keys here) ----
+const SUPABASE_CONFIG = {
+    url: 'https://acvylqelzmpquxfvabfy.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjdnlscWVsem1wcXV4ZnZhYmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3MzcxNjksImV4cCI6MjA1MzMxMzE2OX0.9xYAgupHfzNKigetu8ENYdGmppmi3GXP0isJy3KkhwI',
+    table: 'quiz_leads'
 };
 
 // ---- ANALYTICS CONFIG (plug your IDs here) ----
@@ -73,21 +75,134 @@ function trackEvent(eventName, params) {
 }
 
 // ---- SUPABASE LEAD SAVE ----
-async function saveQuizToAPI(leadData) {
+async function saveLeadToSupabase(leadData) {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping save. Lead data:', leadData);
+        return;
+    }
+
     try {
-        const response = await fetch(API_CONFIG.submitUrl, {
+        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/${SUPABASE_CONFIG.table}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=minimal'
+            },
             body: JSON.stringify(leadData)
         });
 
         if (!response.ok) {
-            console.error('[API] Error saving quiz:', response.status);
+            console.error('[Supabase] Error saving lead:', response.status);
         } else {
-            console.log('[API] Quiz saved successfully');
+            console.log('[Supabase] Lead saved successfully');
         }
     } catch (error) {
-        console.error('[API] Network error:', error);
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
+// ---- SAVE ANONYMOUS RESPONSE ----
+let savedResponseId = null;
+
+async function saveAnonymousResponse() {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping anonymous save.');
+        return;
+    }
+
+    const instructor = getInstructorConfig();
+    const profile = getProfile();
+    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
+
+    const responseData = {
+        answers: answers,
+        scores: scores,
+        total_score: totalScore,
+        profile: profileKey
+    };
+
+    try {
+        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_responses`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(responseData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            savedResponseId = data[0]?.id || null;
+            console.log('[Supabase] Anonymous response saved:', savedResponseId);
+        } else {
+            console.error('[Supabase] Error saving anonymous response:', response.status);
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
+// ---- SAVE APPLICATION (Lead + Link to Response) ----
+async function saveApplication(leadData) {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping save.');
+        return;
+    }
+
+    try {
+        // 1. Save lead
+        const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(leadData)
+        });
+
+        if (!leadResponse.ok) {
+            console.error('[Supabase] Error saving lead:', leadResponse.status);
+            return;
+        }
+
+        const leadResult = await leadResponse.json();
+        const leadId = leadResult[0]?.id;
+        console.log('[Supabase] Lead saved:', leadId);
+
+        // 2. Link response to lead (if we have a saved response)
+        if (savedResponseId && leadId) {
+            const updateResponse = await fetch(
+                `${SUPABASE_CONFIG.url}/rest/v1/quiz_responses?id=eq.${savedResponseId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_CONFIG.anonKey,
+                        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        lead_id: leadId,
+                        instructor_id: leadData.instructor_id || null
+                    })
+                }
+            );
+
+            if (updateResponse.ok) {
+                console.log('[Supabase] Response linked to lead');
+            } else {
+                console.error('[Supabase] Error linking response:', updateResponse.status);
+            }
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
     }
 }
 
@@ -182,8 +297,51 @@ function startQuiz() {
     btn.classList.add('pulse-out');
     setTimeout(() => {
         showScreen('quiz-screen');
-        showQuestion(0);
+        showModeSelection();
     }, 300);
+}
+
+function showModeSelection() {
+    const container = document.getElementById('question-container');
+    container.innerHTML = `
+        <div class="question-card fade-in" style="text-align: center;">
+            <div class="mode-selection-icon">🧠</div>
+            <h2 class="question-text">Como você prefere fazer o teste?</h2>
+            <p class="mode-selection-desc">Após cada resposta, podemos mostrar uma explicação científica sobre o que aquela pergunta revela sobre sua respiração.</p>
+            <div class="options-grid">
+                <button class="option-card mode-option" onclick="selectMode(true)">
+                    <span class="option-letter">A</span>
+                    <span class="option-label">Com explicações</span>
+                    <span class="mode-detail">Aprenda sobre cada aspecto da sua respiração</span>
+                </button>
+                <button class="option-card mode-option" onclick="selectMode(false)">
+                    <span class="option-letter">B</span>
+                    <span class="option-label">Apenas o diagnóstico</span>
+                    <span class="mode-detail">Mais rápido — vá direto ao resultado</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function selectMode(withExplanations) {
+    haptic('light');
+    showExplanations = withExplanations;
+    trackEvent('quiz_mode_selected', { mode: withExplanations ? 'with_explanations' : 'fast' });
+
+    document.querySelectorAll('.mode-option').forEach((btn, i) => {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        if ((withExplanations && i === 0) || (!withExplanations && i === 1)) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.add('dimmed');
+        }
+    });
+
+    setTimeout(() => {
+        showQuestion(0);
+    }, 400);
 }
 
 // ---- PROGRESS ----
@@ -260,6 +418,8 @@ function renderQuestion(q, index) {
         renderBreathingExercise(q, container);
     } else if (q.type === 'tolerance_test') {
         renderToleranceTest(q, container);
+    } else if (q.type === 'multi_select') {
+        renderMultiSelect(q, index, container);
     } else {
         renderStandardQuestion(q, index, container, intro);
     }
@@ -287,6 +447,74 @@ function renderStandardQuestion(q, index, container, intro) {
             </div>
         </div>
     `;
+}
+
+// ---- MULTI SELECT (Self-declaration) ----
+function renderMultiSelect(q, index, container) {
+    container.innerHTML = `
+        <div class="question-card fade-in">
+            <div class="question-chapter-tag">🎯 Seus Desafios</div>
+            <h2 class="question-text">${q.question}</h2>
+            <div class="multi-select-grid">
+                ${q.options.map((opt, i) => `
+                    <button class="multi-select-option" data-value="${opt.value}" onclick="toggleMultiSelect(this)">
+                        <span class="multi-icon">${opt.icon}</span>
+                        <span class="multi-label">${opt.label}</span>
+                        <span class="multi-check"></span>
+                    </button>
+                `).join('')}
+            </div>
+            <button class="btn-primary btn-glow btn-full multi-select-confirm" id="btn-confirm-multi" onclick="confirmMultiSelect(${index})">
+                Continuar
+                <span class="btn-arrow">&rarr;</span>
+            </button>
+        </div>
+    `;
+}
+
+function toggleMultiSelect(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+    const check = btn.querySelector('.multi-check');
+    check.innerHTML = btn.classList.contains('active') ? '&#10003;' : '';
+}
+
+function confirmMultiSelect(qIndex) {
+    const selected = document.querySelectorAll('.multi-select-option.active');
+    if (selected.length === 0) {
+        // Highlight that at least one must be selected
+        document.querySelector('.multi-select-grid').style.outline = '2px solid #DC3545';
+        document.querySelector('.multi-select-grid').style.outlineOffset = '4px';
+        setTimeout(() => {
+            document.querySelector('.multi-select-grid').style.outline = 'none';
+        }, 1500);
+        return;
+    }
+
+    haptic('medium');
+    userMainProblems = Array.from(selected).map(btn => btn.dataset.value);
+
+    const q = QUIZ_QUESTIONS[qIndex];
+    answers[q.id] = userMainProblems;
+
+    trackEvent('quiz_self_declaration', { problems: userMainProblems });
+
+    // Disable all options
+    document.querySelectorAll('.multi-select-option').forEach(btn => {
+        btn.style.pointerEvents = 'none';
+        if (!btn.classList.contains('active')) btn.classList.add('dimmed');
+    });
+    document.getElementById('btn-confirm-multi').style.display = 'none';
+
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, false, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 400);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 400);
+    }
 }
 
 // ---- BREATHING EXERCISE ----
@@ -393,11 +621,15 @@ function selectExerciseOption(qIndex, optIndex) {
     const explanationKey = opt.value === 'chest' ? 'chest' : 'belly';
     const explanation = q.explanation[explanationKey];
 
-    setTimeout(() => {
-        showExplanation(explanation.text, explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 600);
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(explanation.text, explanation.reference, opt.score >= 2, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 600);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 600);
+    }
 }
 
 // ---- TOLERANCE TEST ----
@@ -409,6 +641,18 @@ function renderToleranceTest(q, container) {
                 <h2 class="tolerance-title">${q.instructions.title}</h2>
             </div>
 
+            <div class="tolerance-video-container">
+                <p class="tolerance-video-label">Assista como fazer o teste:</p>
+                <div class="tolerance-video-wrapper">
+                    <iframe
+                        src="https://www.youtube.com/embed/vQwWXKncwK0?rel=0&modestbranding=1&playsinline=1&controls=1"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+
             <div class="tolerance-instructions">
                 ${q.instructions.steps.map((step, i) => `
                     <div class="tolerance-step">
@@ -418,29 +662,21 @@ function renderToleranceTest(q, container) {
                 `).join('')}
             </div>
 
-            <div class="tolerance-timer-area" id="timer-area" style="display:none;">
-                <div class="timer-circle" id="timer-circle">
-                    <div class="timer-inner">
-                        <span class="timer-seconds" id="timer-seconds">0</span>
-                        <span class="timer-label">segundos</span>
-                    </div>
+            <div class="tolerance-input-area" id="input-area">
+                <p class="tolerance-input-label">Quantos segundos você conseguiu?</p>
+                <div class="tolerance-numpad">
+                    <input type="number" id="tolerance-input" class="tolerance-seconds-input"
+                        min="1" max="120" placeholder="0" inputmode="numeric" />
+                    <span class="tolerance-input-unit">segundos</span>
                 </div>
-                <button class="btn-stop-timer" id="btn-stop" onclick="stopToleranceTimer()">
-                    Parar Cronômetro
-                </button>
-            </div>
-
-            <div class="tolerance-actions" id="tolerance-actions">
-                <button class="btn-primary btn-glow" onclick="startToleranceTimer()">
-                    Iniciar Cronômetro
+                <p class="tolerance-input-hint">Máximo: 120 segundos</p>
+                <button class="btn-primary btn-glow" onclick="submitToleranceTime()">
+                    Confirmar meu tempo
                     <span class="btn-arrow">&rarr;</span>
                 </button>
-                <button class="btn-skip" onclick="showToleranceOptions()">
-                    Prefiro selecionar meu tempo
-                </button>
             </div>
 
-            <div class="tolerance-scale" id="tolerance-scale" style="display:none;">
+            <div class="tolerance-scale" id="tolerance-scale">
                 <div class="scale-bar">
                     <div class="scale-segment" style="background: #DC3545; flex: 10;">
                         <span>10s</span>
@@ -460,50 +696,25 @@ function renderToleranceTest(q, container) {
                     </div>
                 </div>
             </div>
-
-            <div class="tolerance-results" id="tolerance-results" style="display:none;">
-                ${q.options.map((opt, i) => `
-                    <button class="tolerance-option" onclick="selectToleranceResult(${currentQuestion}, ${i})">
-                        <span class="tol-level" style="color: ${Object.values(q.explanation.scale)[i].color}">${opt.level}</span>
-                        <span class="tol-label">${opt.label}</span>
-                    </button>
-                `).join('')}
-            </div>
         </div>
     `;
 }
 
-function startToleranceTimer() {
-    haptic('medium');
-    document.getElementById('tolerance-actions').style.display = 'none';
-    document.getElementById('timer-area').style.display = 'flex';
-    document.getElementById('tolerance-scale').style.display = 'block';
+function submitToleranceTime() {
+    const input = document.getElementById('tolerance-input');
+    const seconds = parseInt(input.value);
 
-    toleranceSeconds = 0;
-    const display = document.getElementById('timer-seconds');
-    const circle = document.getElementById('timer-circle');
+    if (!seconds || seconds < 1) {
+        input.style.borderColor = '#DC3545';
+        input.placeholder = 'Digite um número';
+        return;
+    }
+    if (seconds > 120) {
+        input.value = 120;
+        return;
+    }
 
-    toleranceTimer = setInterval(() => {
-        toleranceSeconds++;
-        display.textContent = toleranceSeconds;
-
-        // Color changes based on time
-        if (toleranceSeconds < 10) {
-            circle.style.borderColor = '#DC3545';
-        } else if (toleranceSeconds < 25) {
-            circle.style.borderColor = '#FFC107';
-        } else if (toleranceSeconds < 45) {
-            circle.style.borderColor = '#4A7C59';
-        } else {
-            circle.style.borderColor = '#2D5A3D';
-        }
-    }, 1000);
-}
-
-function stopToleranceTimer() {
-    clearInterval(toleranceTimer);
     haptic('heavy');
-    const seconds = toleranceSeconds;
 
     // Auto-select based on time
     let optionIndex;
@@ -516,7 +727,7 @@ function stopToleranceTimer() {
     const opt = q.options[optionIndex];
 
     // Show result
-    document.getElementById('timer-area').innerHTML = `
+    document.getElementById('input-area').innerHTML = `
         <div class="timer-result fade-in">
             <div class="timer-result-seconds">${seconds}s</div>
             <div class="timer-result-level" style="color: ${Object.values(q.explanation.scale)[optionIndex].color}">
@@ -530,39 +741,17 @@ function stopToleranceTimer() {
     scores[q.category] += opt.score;
     totalScore += opt.score;
 
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(currentQuestion + 1);
-        });
-    }, 1500);
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
+                showQuestion(currentQuestion + 1);
+            });
+        }, 1500);
+    } else {
+        setTimeout(() => showQuestion(currentQuestion + 1), 1500);
+    }
 }
 
-function showToleranceOptions() {
-    document.getElementById('tolerance-actions').style.display = 'none';
-    document.getElementById('tolerance-results').style.display = 'flex';
-    document.getElementById('tolerance-scale').style.display = 'block';
-}
-
-function selectToleranceResult(qIndex, optIndex) {
-    const q = QUIZ_QUESTIONS[qIndex];
-    const opt = q.options[optIndex];
-
-    // Disable buttons
-    document.querySelectorAll('.tolerance-option').forEach((btn, i) => {
-        btn.disabled = true;
-        if (i === optIndex) btn.classList.add('selected');
-    });
-
-    answers[q.id] = opt.value;
-    scores[q.category] += opt.score;
-    totalScore += opt.score;
-
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 600);
-}
 
 // ---- OPTION SELECTION ----
 function selectOption(qIndex, optIndex) {
@@ -588,12 +777,16 @@ function selectOption(qIndex, optIndex) {
     scores[q.category] += opt.score;
     totalScore += opt.score;
 
-    // Show explanation after delay
-    setTimeout(() => {
-        showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
-            showQuestion(qIndex + 1);
-        });
-    }, 500);
+    // Show explanation after delay (or skip if fast mode)
+    if (showExplanations) {
+        setTimeout(() => {
+            showExplanation(q.explanation.text, q.explanation.reference, opt.score >= 2, () => {
+                showQuestion(qIndex + 1);
+            });
+        }, 500);
+    } else {
+        setTimeout(() => showQuestion(qIndex + 1), 500);
+    }
 }
 
 // ---- EXPLANATION OVERLAY ----
@@ -643,14 +836,10 @@ function runAnalyzingAnimation() {
     function showStep() {
         if (stepIndex >= ANALYZING_STEPS.length) {
             setTimeout(() => {
-                const findings = calculateFindings();
-                document.getElementById('findings-count').textContent = findings;
-                document.getElementById('analyzing-animation').classList.add('fade-out');
-                setTimeout(() => {
-                    document.getElementById('analyzing-animation').style.display = 'none';
-                    document.getElementById('lead-form-container').style.display = 'block';
-                    document.getElementById('lead-form-container').classList.add('fade-in');
-                }, 400);
+                // Save anonymous response immediately
+                saveAnonymousResponse();
+                // Go directly to results
+                showResults();
             }, 600);
             return;
         }
@@ -698,48 +887,310 @@ function calculateFindings() {
     return Math.max(3, Math.min(9, findings));
 }
 
-// ---- LEAD SUBMISSION ----
-function submitLead(event) {
-    event.preventDefault();
+// ---- APPLICATION FORM (Multi-step) ----
+let applicationStep = 0;
+let applicationData = {};
+
+function showApplicationForm() {
+    haptic('medium');
+    trackEvent('application_form_opened', { profile: getProfile().title });
+
+    const btn = document.getElementById('btn-show-application');
+    const form = document.getElementById('application-form-wrapper');
+
+    btn.style.display = 'none';
+    form.style.display = 'block';
+    form.classList.add('fade-in');
+    applicationStep = 1;
+    applicationData = { problems: userMainProblems };
+    renderApplicationStep();
+
+    setTimeout(() => {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+function renderApplicationStep() {
+    const wrapper = document.getElementById('application-form-wrapper');
+    const profile = getProfile();
+
+    // Adaptive problem text based on user's self-declaration
+    const problemLabels = {
+        ansiedade: 'ansiedade', insonia: 'insônia', estresse: 'estresse constante',
+        burnout: 'burnout', falta_foco: 'falta de foco', dores: 'dores crônicas',
+        sem_energia: 'falta de energia', impulsividade: 'impulsividade', aprendizado: 'dificuldade de aprendizado'
+    };
+    const problemText = userMainProblems.length > 0
+        ? userMainProblems.map(p => problemLabels[p] || p).join(', ')
+        : 'esses sintomas';
+
+    switch (applicationStep) {
+        case 1:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 1 de 5</div>
+                    <h3 class="app-step-title">Seus dados para contato</h3>
+                    <form id="app-step-form" onsubmit="nextApplicationStep(event)">
+                        <div class="form-group">
+                            <label for="app-name">Seu nome</label>
+                            <input type="text" id="app-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-email">Seu melhor e-mail</label>
+                            <input type="email" id="app-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-phone">WhatsApp</label>
+                            <input type="tel" id="app-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
+                            <input type="email" id="app-referral" placeholder="email de quem te indicou" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-primary btn-full btn-glow">
+                            Continuar <span class="btn-arrow">&rarr;</span>
+                        </button>
+                    </form>
+                </div>
+            `;
+            break;
+
+        case 2:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 2 de 5</div>
+                    <h3 class="app-step-title">De 0 a 10, qual a prioridade de resolver ${problemText} agora?</h3>
+                    <p class="app-step-desc">0 = posso deixar pra depois &nbsp;&nbsp; 10 = preciso resolver agora</p>
+                    <div class="priority-slider-container">
+                        <input type="range" id="priority-slider" min="0" max="10" value="5" class="priority-slider" oninput="updatePriorityValue(this.value)">
+                        <div class="priority-labels">
+                            <span>0</span>
+                            <span class="priority-current" id="priority-value">5</span>
+                            <span>10</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" onclick="nextApplicationStep()">
+                        Continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+            break;
+
+        case 3:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 3 de 5</div>
+                    <h3 class="app-step-title">Se ${problemText} piorasse na sua vida, o que estaria em jogo?</h3>
+                    <p class="app-step-desc">Selecione tudo que se aplica:</p>
+                    <div class="consequence-grid">
+                        ${[
+                            { value: 'relacionamento', label: 'Relacionamento / Família', icon: '❤️' },
+                            { value: 'dinheiro', label: 'Perda de dinheiro / Renda', icon: '💰' },
+                            { value: 'carreira', label: 'Carreira / Trabalho', icon: '💼' },
+                            { value: 'saude', label: 'Saúde física', icon: '🏥' },
+                            { value: 'saude_mental', label: 'Saúde mental', icon: '🧠' },
+                            { value: 'qualidade_vida', label: 'Qualidade de vida', icon: '🌅' },
+                            { value: 'autoestima', label: 'Autoestima / Confiança', icon: '💪' },
+                            { value: 'produtividade', label: 'Produtividade / Performance', icon: '📈' }
+                        ].map(c => `
+                            <button class="consequence-option" data-value="${c.value}" onclick="toggleConsequence(this)">
+                                <span class="consequence-icon">${c.icon}</span>
+                                <span class="consequence-label">${c.label}</span>
+                                <span class="multi-check"></span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" onclick="nextApplicationStep()">
+                        Continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+            break;
+
+        case 4:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 4 de 5</div>
+                    <h3 class="app-step-title">Quanto valeria para você resolver ${problemText} de uma vez por todas?</h3>
+                    <div class="value-options">
+                        ${[
+                            { value: 'nao_pagaria', label: 'Não pagaria nada' },
+                            { value: 'ate_100', label: 'Até R$ 100' },
+                            { value: '100_500', label: 'R$ 100 a R$ 500' },
+                            { value: '500_1000', label: 'R$ 500 a R$ 1.000' },
+                            { value: '1000_3000', label: 'R$ 1.000 a R$ 3.000' },
+                            { value: 'acima_3000', label: 'Acima de R$ 3.000' },
+                            { value: 'nao_tem_preco', label: 'Não tem preço — resolveria qualquer coisa' }
+                        ].map(v => `
+                            <button class="value-option" data-value="${v.value}" onclick="selectValueOption(this)">
+                                ${v.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 5:
+            wrapper.innerHTML = `
+                <div class="app-step fade-in">
+                    <div class="app-step-indicator">Passo 5 de 5</div>
+                    <h3 class="app-step-title">Se você for selecionado(a) para uma demonstração gratuita, quando poderia participar?</h3>
+                    <div class="schedule-section">
+                        <p class="schedule-label">Dias da semana:</p>
+                        <div class="schedule-days">
+                            ${['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'].map(d => `
+                                <button class="schedule-day" data-value="${d.toLowerCase()}" onclick="toggleSchedule(this, 'day')">${d}</button>
+                            `).join('')}
+                        </div>
+                        <p class="schedule-label" style="margin-top: 16px;">Período:</p>
+                        <div class="schedule-periods">
+                            <button class="schedule-period" data-value="manha" onclick="toggleSchedule(this, 'period')">🌅 Manhã</button>
+                            <button class="schedule-period" data-value="tarde" onclick="toggleSchedule(this, 'period')">☀️ Tarde</button>
+                            <button class="schedule-period" data-value="noite" onclick="toggleSchedule(this, 'period')">🌙 Noite</button>
+                        </div>
+                    </div>
+                    <div class="commitment-section">
+                        <label class="commitment-checkbox">
+                            <input type="checkbox" id="commitment-check">
+                            <span class="commitment-text">Eu me comprometo a, caso seja selecionado(a) para a sessão gratuita, <strong>comparecer e dar o meu melhor</strong>.</span>
+                        </label>
+                    </div>
+                    <button class="btn-primary btn-full btn-glow" id="btn-submit-final" onclick="submitFinalApplication()">
+                        Enviar Minha Aplicação <span class="btn-arrow">&rarr;</span>
+                    </button>
+                    <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
+                </div>
+            `;
+            break;
+    }
+
+    setTimeout(() => {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function updatePriorityValue(val) {
+    document.getElementById('priority-value').textContent = val;
+}
+
+function toggleConsequence(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+    const check = btn.querySelector('.multi-check');
+    check.innerHTML = btn.classList.contains('active') ? '&#10003;' : '';
+}
+
+function selectValueOption(btn) {
+    haptic('light');
+    document.querySelectorAll('.value-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applicationData.perceived_value = btn.dataset.value;
+    setTimeout(() => {
+        applicationStep++;
+        renderApplicationStep();
+    }, 300);
+}
+
+function toggleSchedule(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+}
+
+function nextApplicationStep(event) {
+    if (event) event.preventDefault();
+    haptic('light');
+
+    // Collect data from current step
+    switch (applicationStep) {
+        case 1:
+            applicationData.name = document.getElementById('app-name').value.trim();
+            applicationData.email = document.getElementById('app-email').value.trim();
+            applicationData.phone = document.getElementById('app-phone').value.trim();
+            applicationData.referral = document.getElementById('app-referral').value.trim() || null;
+            userName = applicationData.name;
+            userEmail = applicationData.email;
+            break;
+        case 2:
+            applicationData.priority = parseInt(document.getElementById('priority-slider').value);
+            break;
+        case 3:
+            const consequences = Array.from(document.querySelectorAll('.consequence-option.active'))
+                .map(b => b.dataset.value);
+            applicationData.consequences = consequences;
+            break;
+    }
+
+    applicationStep++;
+    renderApplicationStep();
+}
+
+function submitFinalApplication() {
     haptic('success');
 
-    userName = document.getElementById('lead-name').value.trim();
-    userEmail = document.getElementById('lead-email').value.trim();
-    const phone = document.getElementById('lead-phone').value.trim();
-    referralEmail = document.getElementById('lead-referral').value.trim();
+    // Collect scheduling data
+    const selectedDays = Array.from(document.querySelectorAll('.schedule-day.active'))
+        .map(b => b.dataset.value);
+    const selectedPeriods = Array.from(document.querySelectorAll('.schedule-period.active'))
+        .map(b => b.dataset.value);
+    const committed = document.getElementById('commitment-check').checked;
 
-    const instructor = getInstructorConfig();
-    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
+    applicationData.available_days = selectedDays;
+    applicationData.available_periods = selectedPeriods;
+    applicationData.committed = committed;
+
     const leadData = {
-        name: userName,
-        email: userEmail,
-        phone: phone || null,
-        referral: referralEmail || null,
-        instructor_slug: instructor.instructorName || undefined,
-        answers: answers,
-        scores: scores,
-        total_score: totalScore,
-        profile: profileKey
+        name: applicationData.name,
+        email: applicationData.email,
+        phone: applicationData.phone || null,
+        referral: applicationData.referral || null,
+        extra_data: {
+            problems: applicationData.problems,
+            priority: applicationData.priority,
+            consequences: applicationData.consequences,
+            perceived_value: applicationData.perceived_value,
+            available_days: applicationData.available_days,
+            available_periods: applicationData.available_periods,
+            committed: applicationData.committed
+        }
     };
 
-    console.log('Lead captured:', leadData);
+    console.log('Application submitted:', leadData);
+    saveApplication(leadData);
 
-    // Save via backend API (non-blocking, secure)
-    saveQuizToAPI(leadData);
-
-    // Track conversion
-    trackEvent('lead_captured', {
-        profile: leadData.profile,
+    trackEvent('application_submitted', {
+        profile: getProfile().title,
         total_score: totalScore,
-        has_referral: !!referralEmail
+        priority: applicationData.priority,
+        perceived_value: applicationData.perceived_value,
+        committed: committed
     });
 
-    // Meta Pixel standard event
     if (window.fbq) {
         fbq('track', 'Lead', { content_name: 'quiz_respiratorio' });
     }
 
-    showResults();
+    // Show confirmation
+    const wrapper = document.getElementById('application-form-wrapper');
+    wrapper.innerHTML = `
+        <div class="application-confirmation fade-in">
+            <div class="confirmation-icon">✅</div>
+            <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
+            <p class="confirmation-text">
+                Obrigado, <strong>${applicationData.name}</strong>! Um profissional do
+                <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
+                entrará em contato pelo seu WhatsApp se você for selecionado(a).
+            </p>
+            <p class="confirmation-note">Fique atento ao seu WhatsApp nos próximos dias.</p>
+        </div>
+    `;
+
+    const greeting = document.querySelector('.result-greeting strong');
+    if (greeting) greeting.textContent = applicationData.name;
+
+    setTimeout(() => {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
 // ---- GET PROFILE ----
@@ -788,7 +1239,7 @@ function showResults() {
     container.innerHTML = `
         <div class="result-hero">
             <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
+            <p class="result-greeting">Resultado preparado para <strong>você</strong></p>
 
             <div class="score-ring-container">
                 <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
@@ -860,19 +1311,22 @@ function showResults() {
             </div>
         </div>
 
-        <div class="result-cta-section fade-in-section">
+        <div class="result-cta-section fade-in-section" id="application-section">
             <div class="cta-card" style="border-top: 3px solid ${profile.color}">
+                <div class="cta-badge">Oportunidade Exclusiva</div>
                 ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                <h3>Quer transformar sua respiração?</h3>
-                <p>${profile.cta}</p>
-                ${instructor.ctaUrl ? `
-                    <button class="btn-primary btn-glow" onclick="handleCtaClick()">
-                        ${instructor.ctaText}
-                        <span class="btn-arrow">&rarr;</span>
-                    </button>
-                ` : `
-                    <p class="cta-coming-soon">Em breve: programa completo de reeducação respiratória.</p>
-                `}
+                <h3>Quer experimentar o poder da respiração consciente?</h3>
+                <p>Aplique para ser <strong>selecionado(a)</strong> para uma demonstração gratuita de breathwork com um profissional certificado do <strong>Instituto Brasileiro de Neurociência e Respiração</strong>.</p>
+                <p class="cta-subtitle">${profile.cta}</p>
+
+                <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
+                    Quero Ser Selecionado para uma Demonstração Gratuita
+                    <span class="btn-arrow">&rarr;</span>
+                </button>
+
+                <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
+                    <!-- Multi-step form rendered dynamically -->
+                </div>
             </div>
         </div>
     `;

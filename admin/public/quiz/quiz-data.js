@@ -7,12 +7,13 @@
 const QUIZ_CONFIG = {
     title: 'Teste de Ansiedade por Disfunção Respiratória',
     subtitle: 'Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia.',
-    totalQuestions: 10,
+    totalQuestions: 11,
     chapters: {
         padrao: { name: 'Padrão Respiratório', icon: '🫁', questions: [0, 1, 2, 3] },
-        sintomas: { name: 'Sintomas & Sinais', icon: '⚡', questions: [4, 5, 6, 7] },
-        consciencia: { name: 'Consciência Corporal', icon: '🧘', questions: [8] },
-        tolerancia: { name: 'Tolerância ao CO₂', icon: '🧪', questions: [9] }
+        autodeclaracao: { name: 'Seus Desafios', icon: '🎯', questions: [4] },
+        sintomas: { name: 'Sintomas & Sinais', icon: '⚡', questions: [5, 6, 7, 8] },
+        consciencia: { name: 'Consciência Corporal', icon: '🧘', questions: [9] },
+        tolerancia: { name: 'Tolerância ao CO₂', icon: '🧪', questions: [10] }
     }
 };
 
@@ -105,6 +106,34 @@ const QUIZ_QUESTIONS = [
         adaptiveMessage: {
             high: 'Ronco e apneia são sinais sérios de disfunção respiratória noturna.',
             low: 'Boa notícia sobre o sono. Vamos analisar outros padrões.'
+        }
+    },
+
+    // ---- AUTODECLARAÇÃO ----
+    {
+        id: 'main_problems',
+        category: 'autodeclaracao',
+        chapter: 1,
+        question: 'O que mais te incomoda hoje? Selecione tudo que se aplica:',
+        type: 'multi_select',
+        options: [
+            { label: 'Ansiedade', value: 'ansiedade', icon: '😰' },
+            { label: 'Insônia / Dormir mal', value: 'insonia', icon: '🌙' },
+            { label: 'Estresse constante', value: 'estresse', icon: '😤' },
+            { label: 'Burnout (estresse extremo)', value: 'burnout', icon: '🔥' },
+            { label: 'Falta de foco', value: 'falta_foco', icon: '🎯' },
+            { label: 'Dores crônicas', value: 'dores', icon: '💢' },
+            { label: 'Acordar sem energia', value: 'sem_energia', icon: '🔋' },
+            { label: 'Decisões impulsivas', value: 'impulsividade', icon: '⚡' },
+            { label: 'Dificuldade de aprendizado', value: 'aprendizado', icon: '📚' }
+        ],
+        explanation: {
+            text: 'Entender seus principais desafios nos ajuda a personalizar sua análise. Muitos desses problemas estão conectados a padrões respiratórios disfuncionais.',
+            reference: 'Courtney, R. (2009). The functions of breathing and its dysfunctions.'
+        },
+        adaptiveMessage: {
+            high: 'Vamos ver como esses problemas se conectam com sua respiração...',
+            low: 'Vamos investigar se a respiração pode estar por trás disso...'
         }
     },
 
@@ -239,7 +268,7 @@ const QUIZ_QUESTIONS = [
                 'Respire normalmente por algumas respirações',
                 'Inspire profundo PELO NARIZ',
                 'Expire PELO NARIZ o mais devagar que conseguir',
-                'O cronômetro vai contar os segundos para você'
+                'Use o cronômetro do vídeo e depois digite seus segundos abaixo'
             ]
         },
         options: [
