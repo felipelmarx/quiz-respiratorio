@@ -109,21 +109,30 @@ body {
 
 /* Logo */
 .welcome-logo {
-    margin: 0 auto 24px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 auto 28px;
 }
 
-.logo-img {
-    max-width: 200px;
-    height: auto;
+.logo-icon {
+    flex-shrink: 0;
+}
+
+.logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
 }
 
 .welcome-por {
-    font-size: 0.55em;
-    font-weight: 400;
-    color: var(--text-secondary);
-    letter-spacing: 0.02em;
-    vertical-align: baseline;
+    font-size: 0.52em;
+    font-weight: 300;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
 }
 
 .welcome-title {
