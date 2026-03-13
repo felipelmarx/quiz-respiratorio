@@ -1,0 +1,18 @@
+{
+  "name": "ibreathwork_agent",
+  "description": [
+    "An AI agent specialized in respiratory health assessment.",
+    "It analyzes breathing patterns and provides personalized recommendations."
+  ],
+  "meta": {
+    "author": "ibreathwork",
+    "version": "0.0.1",
+    "license": "MIT"
+  },
+  "build": {
+    "entry": "agent.py",
+    "module": "IBreathworkAgent",
+    "class": "IBreathworkAgent"
+  },
+  "tools": []
+}

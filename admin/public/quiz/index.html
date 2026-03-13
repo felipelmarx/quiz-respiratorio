@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Teste de Ansiedade por Disfunção Respiratória — iBreathwork</title>
+    <meta name="description" content="Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia. Teste gratuito baseado em neurociência — iBreathwork.">
+    <meta name="theme-color" content="#F5F5F5">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Teste de Ansiedade por Disfunção Respiratória — iBreathwork">
+    <meta property="og:description" content="Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia. Teste gratuito baseado em neurociência.">
+    <meta property="og:type" content="website">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Particle Background -->
+    <canvas id="particles-canvas"></canvas>
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="app">
+        <!-- ==============================
+             TELA 1: WELCOME
+             ============================== -->
+        <div id="welcome-screen" class="screen active">
+            <div class="welcome-wrapper">
+                <div class="welcome-breathing-icon">
+                    <div class="breath-ring ring-1"></div>
+                    <div class="breath-ring ring-2"></div>
+                    <div class="breath-ring ring-3"></div>
+                    <div class="breath-core">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <path d="M20 8 C14 8, 8 14, 8 20 C8 28, 20 34, 20 34 C20 34, 32 28, 32 20 C32 14, 26 8, 20 8Z"
+                                  fill="url(#heartGrad)" opacity="0.8"/>
+                            <defs>
+                                <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#2D5A3D"/>
+                                    <stop offset="100%" style="stop-color:#4A7C59"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+
+                <p class="welcome-brand">iBreathwork</p>
+
+                <h1 class="welcome-title">
+                    Teste de Ansiedade por<br>
+                    <span class="gradient-text">Disfunção Respiratória</span>
+                </h1>
+
+                <p class="welcome-subtitle">
+                    Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia.
+                </p>
+
+                <div class="welcome-badges">
+                    <div class="badge">
+                        <span class="badge-icon">⏱</span>
+                        <span>5 min</span>
+                    </div>
+                    <div class="badge">
+                        <span class="badge-icon">🧠</span>
+                        <span>IA Adaptativa</span>
+                    </div>
+                    <div class="badge">
+                        <span class="badge-icon">🔬</span>
+                        <span>Base Científica</span>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="btn-primary btn-glow" onclick="startQuiz()">
+                    Iniciar Avaliação Gratuita
+                    <span class="btn-arrow">&rarr;</span>
+                </button>
+
+                <p class="welcome-trust">Gratuito e confidencial. Mais de 10.000 pessoas já fizeram.</p>
+            </div>
+        </div>
+
+        <!-- ==============================
+             TELA 2: QUIZ
+             ============================== -->
+        <div id="quiz-screen" class="screen">
+            <div class="quiz-top-bar">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="question-counter">1 de 10</span>
+                    <span id="progress-text">0%</span>
+                </div>
+            </div>
+
+            <div class="question-wrapper" id="question-container">
+                <!-- Dynamic question content -->
+            </div>
+        </div>
+
+        <!-- ==============================
+             TELA 3: LEAD CAPTURE
+             ============================== -->
+        <div id="lead-screen" class="screen">
+            <div class="lead-wrapper">
+                <div class="analyzing-animation" id="analyzing-animation">
+                    <div class="analyzing-brain">
+                        <div class="brain-pulse"></div>
+                        <div class="brain-pulse delay-1"></div>
+                        <div class="brain-pulse delay-2"></div>
+                        <span class="brain-emoji">🧠</span>
+                    </div>
+                    <h2 class="analyzing-title">Analisando suas respostas...</h2>
+                    <div class="analyzing-steps" id="analyzing-steps"></div>
+                </div>
+
+                <div class="lead-form-container" id="lead-form-container" style="display:none;">
+                    <div class="lead-icon">📋</div>
+                    <h2 class="lead-title">Seu relatório está pronto!</h2>
+                    <p class="lead-subtitle">
+                        Identificamos <strong id="findings-count">5</strong> pontos importantes no seu padrão respiratório.
+                        Insira seus dados para ver o resultado completo:
+                    </p>
+                    <form id="lead-form" onsubmit="submitLead(event)">
+                        <div class="form-group">
+                            <label for="lead-name">Seu nome</label>
+                            <input type="text" id="lead-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="lead-email">Seu melhor e-mail</label>
+                            <input type="email" id="lead-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="lead-phone">WhatsApp <span class="optional">(opcional)</span></label>
+                            <input type="tel" id="lead-phone" placeholder="(11) 99999-9999" autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="lead-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
+                            <input type="email" id="lead-referral" placeholder="email de quem te indicou" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-primary btn-full btn-glow">
+                            Ver Meu Relatório Completo
+                            <span class="btn-arrow">&rarr;</span>
+                        </button>
+                        <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             TELA 4: RESULTADO
+             ============================== -->
+        <div id="result-screen" class="screen">
+            <div class="result-container" id="result-container">
+                <!-- Dynamic results -->
+            </div>
+        </div>
+    </div>
+
+    <script src="quiz-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

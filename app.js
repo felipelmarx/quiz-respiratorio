@@ -1,12 +1,12 @@
 // ============================================
-// APP.JS - Motor da Experiência Disney
-// Quiz Respiratório Imersivo com IA Adaptativa
+// APP.JS - iBreathwork Quiz Respiratório
+// Instituto de Neurociência da Respiração
 // ============================================
 
 // ---- STATE ----
 let currentQuestion = 0;
 let answers = {};
-let scores = { padrao: 0, sintomas: 0, consciencia: 0 };
+let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0 };
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
@@ -103,6 +103,109 @@ async function saveLeadToSupabase(leadData) {
     }
 }
 
+// ---- SAVE ANONYMOUS RESPONSE ----
+let savedResponseId = null;
+
+async function saveAnonymousResponse() {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping anonymous save.');
+        return;
+    }
+
+    const instructor = getInstructorConfig();
+    const profile = getProfile();
+    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
+
+    const responseData = {
+        answers: answers,
+        scores: scores,
+        total_score: totalScore,
+        profile: profileKey
+    };
+
+    try {
+        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_responses`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(responseData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            savedResponseId = data[0]?.id || null;
+            console.log('[Supabase] Anonymous response saved:', savedResponseId);
+        } else {
+            console.error('[Supabase] Error saving anonymous response:', response.status);
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
+// ---- SAVE APPLICATION (Lead + Link to Response) ----
+async function saveApplication(leadData) {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+        console.log('[Supabase] Not configured, skipping save.');
+        return;
+    }
+
+    try {
+        // 1. Save lead
+        const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_CONFIG.anonKey,
+                'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(leadData)
+        });
+
+        if (!leadResponse.ok) {
+            console.error('[Supabase] Error saving lead:', leadResponse.status);
+            return;
+        }
+
+        const leadResult = await leadResponse.json();
+        const leadId = leadResult[0]?.id;
+        console.log('[Supabase] Lead saved:', leadId);
+
+        // 2. Link response to lead (if we have a saved response)
+        if (savedResponseId && leadId) {
+            const updateResponse = await fetch(
+                `${SUPABASE_CONFIG.url}/rest/v1/quiz_responses?id=eq.${savedResponseId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_CONFIG.anonKey,
+                        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        lead_id: leadId,
+                        instructor_id: leadData.instructor_id || null
+                    })
+                }
+            );
+
+            if (updateResponse.ok) {
+                console.log('[Supabase] Response linked to lead');
+            } else {
+                console.error('[Supabase] Error linking response:', updateResponse.status);
+            }
+        }
+    } catch (error) {
+        console.error('[Supabase] Network error:', error);
+    }
+}
+
 // ---- PARTICLES ----
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
@@ -160,7 +263,7 @@ function initParticles() {
             const currentOpacity = p.opacity * (0.5 + breathEffect * 0.5);
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(102, 126, 234, ${currentOpacity})`;
+            ctx.fillStyle = `rgba(45, 90, 61, ${currentOpacity})`;
             ctx.fill();
         });
 
@@ -226,7 +329,7 @@ function showChapterTransition(chapterNum, callback) {
             <div class="chapter-divider"></div>
             <p class="chapter-message">${message}</p>
             <div class="chapter-progress-dots">
-                ${[1, 2, 3].map(i => `
+                ${[1, 2, 3, 4].map(i => `
                     <div class="chapter-dot ${i <= chapterNum ? 'completed' : i === chapterNum + 1 ? 'current' : ''}">
                         ${i <= chapterNum ? '&#10003;' : i}
                     </div>
@@ -421,6 +524,18 @@ function renderToleranceTest(q, container) {
                 <h2 class="tolerance-title">${q.instructions.title}</h2>
             </div>
 
+            <div class="tolerance-video-container">
+                <p class="tolerance-video-label">Assista como fazer o teste:</p>
+                <div class="tolerance-video-wrapper">
+                    <iframe
+                        src="https://www.youtube.com/embed/vQwWXKncwK0?rel=0&modestbranding=1&playsinline=1&controls=1"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+
             <div class="tolerance-instructions">
                 ${q.instructions.steps.map((step, i) => `
                     <div class="tolerance-step">
@@ -454,19 +569,19 @@ function renderToleranceTest(q, container) {
 
             <div class="tolerance-scale" id="tolerance-scale" style="display:none;">
                 <div class="scale-bar">
-                    <div class="scale-segment" style="background: #ef4444; flex: 10;">
+                    <div class="scale-segment" style="background: #DC3545; flex: 10;">
                         <span>10s</span>
                         <small>Disfuncional</small>
                     </div>
-                    <div class="scale-segment" style="background: #f59e0b; flex: 15;">
+                    <div class="scale-segment" style="background: #FFC107; flex: 15;">
                         <span>25s</span>
                         <small>Saudável</small>
                     </div>
-                    <div class="scale-segment" style="background: #22c55e; flex: 20;">
+                    <div class="scale-segment" style="background: #4A7C59; flex: 20;">
                         <span>45s</span>
                         <small>Aprendiz do Ar</small>
                     </div>
-                    <div class="scale-segment" style="background: #06b6d4; flex: 15;">
+                    <div class="scale-segment" style="background: #2D5A3D; flex: 15;">
                         <span>60s+</span>
                         <small>Guardião da Presença</small>
                     </div>
@@ -501,13 +616,13 @@ function startToleranceTimer() {
 
         // Color changes based on time
         if (toleranceSeconds < 10) {
-            circle.style.borderColor = '#ef4444';
+            circle.style.borderColor = '#DC3545';
         } else if (toleranceSeconds < 25) {
-            circle.style.borderColor = '#f59e0b';
+            circle.style.borderColor = '#FFC107';
         } else if (toleranceSeconds < 45) {
-            circle.style.borderColor = '#22c55e';
+            circle.style.borderColor = '#4A7C59';
         } else {
-            circle.style.borderColor = '#06b6d4';
+            circle.style.borderColor = '#2D5A3D';
         }
     }, 1000);
 }
@@ -655,14 +770,10 @@ function runAnalyzingAnimation() {
     function showStep() {
         if (stepIndex >= ANALYZING_STEPS.length) {
             setTimeout(() => {
-                const findings = calculateFindings();
-                document.getElementById('findings-count').textContent = findings;
-                document.getElementById('analyzing-animation').classList.add('fade-out');
-                setTimeout(() => {
-                    document.getElementById('analyzing-animation').style.display = 'none';
-                    document.getElementById('lead-form-container').style.display = 'block';
-                    document.getElementById('lead-form-container').classList.add('fade-in');
-                }, 400);
+                // Save anonymous response immediately
+                saveAnonymousResponse();
+                // Go directly to results
+                showResults();
             }, 600);
             return;
         }
@@ -703,20 +814,39 @@ function calculateFindings() {
     if (scores.sintomas > 6) findings += 3;
     else if (scores.sintomas > 3) findings += 2;
     else findings += 1;
-    if (scores.consciencia > 3) findings += 2;
+    if (scores.consciencia > 1) findings += 2;
+    else findings += 1;
+    if (scores.tolerancia > 2) findings += 2;
     else findings += 1;
     return Math.max(3, Math.min(9, findings));
 }
 
-// ---- LEAD SUBMISSION ----
-function submitLead(event) {
+// ---- APPLICATION FORM ----
+function showApplicationForm() {
+    haptic('medium');
+    trackEvent('application_form_opened', { profile: getProfile().title });
+
+    const btn = document.getElementById('btn-show-application');
+    const form = document.getElementById('application-form-wrapper');
+
+    btn.style.display = 'none';
+    form.style.display = 'block';
+    form.classList.add('fade-in');
+
+    // Scroll to form
+    setTimeout(() => {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+function submitApplication(event) {
     event.preventDefault();
     haptic('success');
 
-    userName = document.getElementById('lead-name').value.trim();
-    userEmail = document.getElementById('lead-email').value.trim();
-    const phone = document.getElementById('lead-phone').value.trim();
-    referralEmail = document.getElementById('lead-referral').value.trim();
+    userName = document.getElementById('app-name').value.trim();
+    userEmail = document.getElementById('app-email').value.trim();
+    const phone = document.getElementById('app-phone').value.trim();
+    referralEmail = document.getElementById('app-referral').value.trim();
 
     const instructor = getInstructorConfig();
     const leadData = {
@@ -724,22 +854,16 @@ function submitLead(event) {
         email: userEmail,
         phone: phone || null,
         referral: referralEmail || null,
-        instructor: instructor.instructorName || null,
-        answers: answers,
-        scores: scores,
-        total_score: totalScore,
-        profile: getProfile().title,
-        created_at: new Date().toISOString()
     };
 
-    console.log('Lead captured:', leadData);
+    console.log('Application submitted:', leadData);
 
     // Save to Supabase (non-blocking)
-    saveLeadToSupabase(leadData);
+    saveApplication(leadData);
 
     // Track conversion
-    trackEvent('lead_captured', {
-        profile: leadData.profile,
+    trackEvent('application_submitted', {
+        profile: getProfile().title,
         total_score: totalScore,
         has_referral: !!referralEmail
     });
@@ -749,7 +873,21 @@ function submitLead(event) {
         fbq('track', 'Lead', { content_name: 'quiz_respiratorio' });
     }
 
-    showResults();
+    // Show confirmation
+    document.getElementById('application-form-wrapper').style.display = 'none';
+    const confirmation = document.getElementById('application-confirmation');
+    confirmation.style.display = 'block';
+    confirmation.classList.add('fade-in');
+    document.getElementById('confirmation-name').textContent = userName;
+
+    // Update greeting with name
+    const greeting = document.querySelector('.result-greeting strong');
+    if (greeting) greeting.textContent = userName;
+
+    // Scroll to confirmation
+    setTimeout(() => {
+        confirmation.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 
 // ---- GET PROFILE ----
@@ -779,7 +917,7 @@ function showResults() {
     const healthScore = Math.max(0, 100 - riskPct);
 
     // Category analysis
-    const categories = ['padrao', 'sintomas', 'consciencia'].map(cat => {
+    const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
         const level = getCategoryLevel(cat);
         const config = CATEGORY_ANALYSIS[cat];
         const levelConfig = config.levels[level];
@@ -798,7 +936,7 @@ function showResults() {
     container.innerHTML = `
         <div class="result-hero">
             <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
+            <p class="result-greeting">Resultado preparado para <strong>você</strong></p>
 
             <div class="score-ring-container">
                 <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
@@ -870,19 +1008,55 @@ function showResults() {
             </div>
         </div>
 
-        <div class="result-cta-section fade-in-section">
+        <div class="result-cta-section fade-in-section" id="application-section">
             <div class="cta-card" style="border-top: 3px solid ${profile.color}">
+                <div class="cta-badge">Oportunidade Exclusiva</div>
                 ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                <h3>Quer transformar sua respiração?</h3>
-                <p>${profile.cta}</p>
-                ${instructor.ctaUrl ? `
-                    <button class="btn-primary btn-glow" onclick="handleCtaClick()">
-                        ${instructor.ctaText}
-                        <span class="btn-arrow">&rarr;</span>
-                    </button>
-                ` : `
-                    <p class="cta-coming-soon">Em breve: programa completo de reeducação respiratória.</p>
-                `}
+                <h3>Quer experimentar o poder da respiração consciente?</h3>
+                <p>Aplique para ser <strong>selecionado(a)</strong> para uma demonstração gratuita de breathwork com um profissional certificado do <strong>Instituto Brasileiro de Neurociência e Respiração</strong>.</p>
+                <p class="cta-subtitle">${profile.cta}</p>
+
+                <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
+                    Quero Ser Selecionado para uma Demonstração Gratuita
+                    <span class="btn-arrow">&rarr;</span>
+                </button>
+
+                <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
+                    <form id="application-form" onsubmit="submitApplication(event)">
+                        <div class="form-group">
+                            <label for="app-name">Seu nome</label>
+                            <input type="text" id="app-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-email">Seu melhor e-mail</label>
+                            <input type="email" id="app-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-phone">WhatsApp</label>
+                            <input type="tel" id="app-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label for="app-referral">Quem te indicou? <span class="optional">(opcional)</span></label>
+                            <input type="email" id="app-referral" placeholder="email de quem te indicou" autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn-primary btn-full btn-glow" id="btn-submit-application">
+                            Enviar Minha Aplicação
+                            <span class="btn-arrow">&rarr;</span>
+                        </button>
+                        <p class="form-trust">🔒 Seus dados estão seguros. Não compartilhamos com terceiros.</p>
+                    </form>
+                </div>
+
+                <div class="application-confirmation" id="application-confirmation" style="display:none;">
+                    <div class="confirmation-icon">✅</div>
+                    <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
+                    <p class="confirmation-text">
+                        Obrigado, <strong id="confirmation-name"></strong>! Um profissional do
+                        <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
+                        entrará em contato pelo seu WhatsApp se você for selecionado(a).
+                    </p>
+                    <p class="confirmation-note">Fique atento ao seu WhatsApp nos próximos dias.</p>
+                </div>
             </div>
         </div>
     `;
@@ -982,7 +1156,7 @@ function launchConfetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const colors = ['#667eea', '#764ba2', '#22c55e', '#f59e0b', '#06b6d4', '#ec4899'];
+    const colors = ['#2D5A3D', '#4A7C59', '#28A745', '#E8F5E9', '#1e4a2e', '#6ba378'];
     const confetti = [];
 
     for (let i = 0; i < 100; i++) {
