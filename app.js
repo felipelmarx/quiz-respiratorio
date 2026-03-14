@@ -10,6 +10,7 @@ let scores = { padrao: 0, sintomas: 0, consciencia: 0, tolerancia: 0, autodeclar
 let totalScore = 0;
 let userName = '';
 let userEmail = '';
+let userPhone = '';
 let referralEmail = '';
 let currentChapter = 1;
 let particlesActive = true;
@@ -831,7 +832,7 @@ function runAnalyzingAnimation() {
         if (stepIndex >= ANALYZING_STEPS.length) {
             setTimeout(async () => {
                 await saveAnonymousResponse();
-                showResults();
+                showLeadCapture();
             }, 600);
             return;
         }
@@ -860,6 +861,64 @@ function runAnalyzingAnimation() {
 }
 
 
+// ---- LEAD CAPTURE (before results) ----
+function showLeadCapture() {
+    const wrapper = document.querySelector('.lead-wrapper');
+    const analyzing = document.getElementById('analyzing-animation');
+
+    // Fade out analyzing animation
+    analyzing.classList.add('fade-out');
+
+    setTimeout(() => {
+        analyzing.style.display = 'none';
+
+        // Build lead capture form
+        const leadForm = document.createElement('div');
+        leadForm.className = 'lead-capture fade-in';
+        leadForm.innerHTML = `
+            <div class="lead-capture-card">
+                <div class="lead-capture-icon">📊</div>
+                <h2 class="lead-capture-title">Seu resultado está pronto!</h2>
+                <p class="lead-capture-desc">Preencha abaixo para ver sua análise personalizada.</p>
+                <form id="lead-capture-form" onsubmit="submitLeadCapture(event)">
+                    <div class="form-group">
+                        <label for="lead-name">Seu nome</label>
+                        <input type="text" id="lead-name" placeholder="Como posso te chamar?" required autocomplete="given-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-email">Seu melhor e-mail</label>
+                        <input type="email" id="lead-email" placeholder="seuemail@exemplo.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-phone">WhatsApp</label>
+                        <input type="tel" id="lead-phone" placeholder="(11) 99999-9999" required autocomplete="tel">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full btn-glow">
+                        Ver Meu Resultado
+                        <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </form>
+                <p class="lead-capture-trust">Seus dados estão seguros e não serão compartilhados.</p>
+            </div>
+        `;
+        wrapper.appendChild(leadForm);
+    }, 400);
+}
+
+function submitLeadCapture(event) {
+    event.preventDefault();
+    haptic('light');
+
+    userName = document.getElementById('lead-name').value.trim();
+    userEmail = document.getElementById('lead-email').value.trim();
+    userPhone = document.getElementById('lead-phone').value.trim();
+
+    trackEvent('lead_captured', { source: 'pre_result' });
+
+    showResults();
+}
+
+
 // ---- APPLICATION FORM (Multi-step) ----
 let applicationStep = 0;
 let applicationData = {};
@@ -870,12 +929,24 @@ function showApplicationForm() {
 
     const btn = document.getElementById('btn-show-application');
     const form = document.getElementById('application-form-wrapper');
+    const ctaIntro = document.getElementById('cta-intro');
 
     btn.style.display = 'none';
+    if (ctaIntro) ctaIntro.style.display = 'none';
     form.style.display = 'block';
     form.classList.add('fade-in');
-    applicationStep = 1;
     applicationData = { problems: userMainProblems };
+
+    // If lead data already captured, skip step 1
+    if (userName && userEmail && userPhone) {
+        applicationData.name = userName;
+        applicationData.email = userEmail;
+        applicationData.phone = userPhone;
+        applicationStep = 2;
+    } else {
+        applicationStep = 1;
+    }
+
     renderApplicationStep();
 
     setTimeout(() => {
@@ -886,6 +957,12 @@ function showApplicationForm() {
 function renderApplicationStep() {
     const wrapper = document.getElementById('application-form-wrapper');
     const profile = getProfile();
+
+    // Step indicator: if step 1 was skipped, adjust numbering
+    const skipContact = (userName && userEmail && userPhone);
+    const totalSteps = skipContact ? 4 : 5;
+    const displayStep = skipContact ? applicationStep - 1 : applicationStep;
+    const stepLabel = (step) => `Passo ${step} de ${totalSteps}`;
 
     // Adaptive problem text based on user's self-declaration
     const problemLabels = {
@@ -901,7 +978,7 @@ function renderApplicationStep() {
         case 1:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 1 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Seus dados para contato</h3>
                     <form id="app-step-form" onsubmit="nextApplicationStep(event)">
                         <div class="form-group">
@@ -926,12 +1003,27 @@ function renderApplicationStep() {
                     </form>
                 </div>
             `;
+            // Pre-fill fields if data already exists
+            setTimeout(() => {
+                if (applicationData.name) {
+                    const el = document.getElementById('app-name');
+                    if (el) el.value = applicationData.name;
+                }
+                if (applicationData.email) {
+                    const el = document.getElementById('app-email');
+                    if (el) el.value = applicationData.email;
+                }
+                if (applicationData.phone) {
+                    const el = document.getElementById('app-phone');
+                    if (el) el.value = applicationData.phone;
+                }
+            }, 0);
             break;
 
         case 2:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 2 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">De 0 a 10, qual a prioridade de resolver ${problemText} agora?</h3>
                     <p class="app-step-desc">0 = posso deixar pra depois &nbsp;&nbsp; 10 = preciso resolver agora</p>
                     <div class="priority-slider-container">
@@ -952,7 +1044,7 @@ function renderApplicationStep() {
         case 3:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 3 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Se ${problemText} piorasse na sua vida, o que estaria em jogo?</h3>
                     <p class="app-step-desc">Selecione tudo que se aplica:</p>
                     <div class="consequence-grid">
@@ -983,7 +1075,7 @@ function renderApplicationStep() {
         case 4:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 4 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Quanto valeria para você resolver ${problemText} de uma vez por todas?</h3>
                     <div class="value-options">
                         ${[
@@ -1007,7 +1099,7 @@ function renderApplicationStep() {
         case 5:
             wrapper.innerHTML = `
                 <div class="app-step fade-in">
-                    <div class="app-step-indicator">Passo 5 de 5</div>
+                    <div class="app-step-indicator">${stepLabel(displayStep)}</div>
                     <h3 class="app-step-title">Se você for selecionado(a) para uma demonstração gratuita, quando poderia participar?</h3>
                     <div class="schedule-section">
                         <p class="schedule-label">Dias da semana:</p>
@@ -1083,6 +1175,7 @@ function nextApplicationStep(event) {
             applicationData.referral = document.getElementById('app-referral').value.trim() || null;
             userName = applicationData.name;
             userEmail = applicationData.email;
+            userPhone = applicationData.phone;
             break;
         case 2:
             applicationData.priority = parseInt(document.getElementById('priority-slider').value);
@@ -1192,6 +1285,30 @@ function getCategoryLevel(category) {
 }
 
 // ---- RESULTS ----
+function getPersonalizedBenefit() {
+    const benefitMap = {
+        ansiedade: 'redução da ansiedade',
+        insonia: 'melhora do sono',
+        estresse: 'controle do estresse',
+        burnout: 'recuperação do burnout',
+        falta_foco: 'aumento do foco e concentração',
+        dores: 'alívio de dores crônicas',
+        sem_energia: 'restauração da energia',
+        impulsividade: 'regulação emocional',
+        aprendizado: 'melhora da capacidade cognitiva'
+    };
+
+    const userProblems = answers['main_problems'] || [];
+    const benefits = userProblems
+        .map(p => benefitMap[p])
+        .filter(Boolean);
+
+    if (benefits.length === 0) return 'melhora da sua saúde respiratória';
+    if (benefits.length === 1) return benefits[0];
+    if (benefits.length === 2) return `${benefits[0]} e ${benefits[1]}`;
+    return `${benefits.slice(0, -1).join(', ')} e ${benefits[benefits.length - 1]}`;
+}
+
 function showResults() {
     showScreen('result-screen');
 
@@ -1200,6 +1317,7 @@ function showResults() {
     const maxScore = 33;
     const riskPct = Math.min(100, Math.round((totalScore / maxScore) * 100));
     const healthScore = Math.max(0, 100 - riskPct);
+    const personalizedBenefit = getPersonalizedBenefit();
 
     // Category analysis
     const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
@@ -1213,7 +1331,8 @@ function showResults() {
             levelColor: levelConfig.color,
             score: scores[cat],
             pct: Math.min(100, Math.round((scores[cat] / config.maxScore) * 100)),
-            insight: config.insights[level]
+            insight: config.insights[level],
+            refs: config.references ? config.references[level] : []
         };
     });
 
@@ -1221,7 +1340,7 @@ function showResults() {
     container.innerHTML = `
         <div class="result-hero">
             <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>você</strong></p>
+            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
 
             <div class="score-ring-container">
                 <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
@@ -1258,6 +1377,10 @@ function showResults() {
                         <div class="category-bar-fill" data-width="${cat.pct}" style="background: ${cat.levelColor}; width: 0%"></div>
                     </div>
                     <p class="category-insight">${cat.insight}</p>
+                    ${cat.refs && cat.refs.length > 0 ? `
+                    <div class="category-refs">
+                        ${cat.refs.map(ref => `<span class="ref-tag">${ref.author}, ${ref.year}</span>`).join('')}
+                    </div>` : ''}
                 </div>
             `).join('')}
         </div>
@@ -1295,14 +1418,15 @@ function showResults() {
 
         <div class="result-cta-section fade-in-section" id="application-section">
             <div class="cta-card" style="border-top: 3px solid ${profile.color}">
-                <div class="cta-badge">Oportunidade Exclusiva</div>
-                ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                <h3>Quer experimentar o poder da respiração consciente?</h3>
-                <p>Aplique para ser <strong>selecionado(a)</strong> para uma demonstração gratuita de breathwork com um profissional certificado do <strong>Instituto Brasileiro de Neurociência e Respiração</strong>.</p>
-                <p class="cta-subtitle">${profile.cta}</p>
+                <div id="cta-intro">
+                    <div class="cta-badge">Oportunidade Exclusiva</div>
+                    ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
+                    <p class="cta-personalized">Com base no seu teste, ${userName ? `<strong>${userName}</strong>, ` : ''}você é um forte candidato a uma sessão de demonstração de <strong>breathwork baseado em evidências</strong> para <strong>${personalizedBenefit}</strong>.</p>
+                    <p class="cta-subtitle">${profile.cta}</p>
+                </div>
 
                 <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
-                    Quero Ser Selecionado para uma Demonstração Gratuita
+                    Quero Participar Gratuitamente
                     <span class="btn-arrow">&rarr;</span>
                 </button>
 
