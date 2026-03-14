@@ -1,5 +1,38 @@
 export type UserRole = 'master' | 'instructor'
 
+export type Permission =
+  | 'view_dashboard'
+  | 'view_responses'
+  | 'view_contacts'
+  | 'export_data'
+  | 'manage_settings'
+
+export type UserPermissions = Record<Permission, boolean>
+
+export const ALL_PERMISSIONS: Permission[] = [
+  'view_dashboard',
+  'view_responses',
+  'view_contacts',
+  'export_data',
+  'manage_settings',
+]
+
+export const DEFAULT_PERMISSIONS: UserPermissions = {
+  view_dashboard: true,
+  view_responses: true,
+  view_contacts: true,
+  export_data: true,
+  manage_settings: true,
+}
+
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  view_dashboard: 'Ver Dashboard',
+  view_responses: 'Ver Respostas',
+  view_contacts: 'Ver Contatos',
+  export_data: 'Exportar Dados',
+  manage_settings: 'Configurações',
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -13,6 +46,7 @@ export interface Database {
           avatar_url: string | null
           slug: string | null
           is_active: boolean
+          permissions: UserPermissions
           created_at: string
           updated_at: string
         }
@@ -25,6 +59,7 @@ export interface Database {
           avatar_url?: string | null
           slug?: string | null
           is_active?: boolean
+          permissions?: UserPermissions
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +72,7 @@ export interface Database {
           avatar_url?: string | null
           slug?: string | null
           is_active?: boolean
+          permissions?: UserPermissions
           updated_at?: string
         }
       }

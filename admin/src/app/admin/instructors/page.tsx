@@ -7,6 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/utils'
+import { parsePermissions } from '@/lib/permissions'
+import {
+  ALL_PERMISSIONS,
+  PERMISSION_LABELS,
+  DEFAULT_PERMISSIONS,
+  type Permission,
+  type UserPermissions,
+} from '@/lib/types/database'
 
 interface Instructor {
   id: string
@@ -15,6 +23,7 @@ interface Instructor {
   slug: string | null
   whatsapp: string | null
   is_active: boolean
+  permissions: UserPermissions
   created_at: string
 }
 
@@ -23,6 +32,7 @@ export default function InstructorsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [editingPerms, setEditingPerms] = useState<string | null>(null)
 
   // Create form
   const [newName, setNewName] = useState('')
@@ -36,11 +46,16 @@ export default function InstructorsPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('users')
-      .select('id, name, email, slug, whatsapp, is_active, created_at')
+      .select('id, name, email, slug, whatsapp, is_active, permissions, created_at')
       .eq('role', 'instructor')
       .order('created_at', { ascending: false })
 
-    setInstructors(data || [])
+    setInstructors(
+      (data || []).map((inst) => ({
+        ...inst,
+        permissions: parsePermissions(inst.permissions),
+      }))
+    )
     setLoading(false)
   }, [])
 
@@ -89,6 +104,15 @@ export default function InstructorsPage() {
     const supabase = createClient()
     await supabase.from('users').update({ is_active: !currentActive }).eq('id', id)
     fetchInstructors()
+  }
+
+  async function togglePermission(id: string, permission: Permission, currentPerms: UserPermissions) {
+    const supabase = createClient()
+    const updated = { ...currentPerms, [permission]: !currentPerms[permission] }
+    await supabase.from('users').update({ permissions: updated }).eq('id', id)
+    setInstructors((prev) =>
+      prev.map((inst) => inst.id === id ? { ...inst, permissions: updated } : inst)
+    )
   }
 
   return (
@@ -142,7 +166,7 @@ export default function InstructorsPage() {
                 <tr><td colSpan={6} className="py-8 text-center text-gray-400">Nenhum instrutor cadastrado</td></tr>
               ) : (
                 instructors.map((inst) => (
-                  <tr key={inst.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={inst.id} className="border-b border-gray-100">
                     <td className="py-3 px-4 font-medium text-gray-900">{inst.name}</td>
                     <td className="py-3 px-4 text-gray-600">{inst.email}</td>
                     <td className="py-3 px-4 text-gray-600 font-mono text-xs">{inst.slug || '—'}</td>
@@ -153,13 +177,22 @@ export default function InstructorsPage() {
                     </td>
                     <td className="py-3 px-4 text-gray-500">{formatDate(inst.created_at)}</td>
                     <td className="py-3 px-4">
-                      <Button
-                        variant={inst.is_active ? 'outline' : 'primary'}
-                        size="sm"
-                        onClick={() => toggleActive(inst.id, inst.is_active)}
-                      >
-                        {inst.is_active ? 'Desativar' : 'Ativar'}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={inst.is_active ? 'outline' : 'primary'}
+                          size="sm"
+                          onClick={() => toggleActive(inst.id, inst.is_active)}
+                        >
+                          {inst.is_active ? 'Desativar' : 'Ativar'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingPerms(editingPerms === inst.id ? null : inst.id)}
+                        >
+                          Permissões
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -167,6 +200,40 @@ export default function InstructorsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Permissions Panel (expanded under table) */}
+        {editingPerms && (() => {
+          const inst = instructors.find((i) => i.id === editingPerms)
+          if (!inst) return null
+          return (
+            <div className="border-t border-gray-200 mt-4 pt-4 px-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Permissões de {inst.name}
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setEditingPerms(null)}>
+                  Fechar
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {ALL_PERMISSIONS.map((perm) => (
+                  <label
+                    key={perm}
+                    className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-emerald-300 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={inst.permissions[perm]}
+                      onChange={() => togglePermission(inst.id, perm, inst.permissions)}
+                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm text-gray-700">{PERMISSION_LABELS[perm]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </Card>
     </div>
   )

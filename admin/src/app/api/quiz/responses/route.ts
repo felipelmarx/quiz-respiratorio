@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { hasPermission, parsePermissions } from '@/lib/permissions'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +9,17 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Permission check
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role, permissions')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || !hasPermission(userData.role, parsePermissions(userData.permissions), 'view_responses')) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
     const searchParams = request.nextUrl.searchParams

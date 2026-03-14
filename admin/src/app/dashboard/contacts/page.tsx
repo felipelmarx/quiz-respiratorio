@@ -1,10 +1,30 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { formatDate, formatPhone } from '@/lib/utils'
 import { ExportCSVButton } from '@/components/dashboard/export-csv-button'
+import { hasPermission, parsePermissions } from '@/lib/permissions'
 
 export default async function ContactsPage() {
   const supabase = await createClient()
+
+  // Permission check
+  let canExport = true
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role, permissions')
+      .eq('id', user.id)
+      .single()
+    if (userData) {
+      const perms = parsePermissions(userData.permissions)
+      if (!hasPermission(userData.role, perms, 'view_contacts')) {
+        redirect('/dashboard')
+      }
+      canExport = hasPermission(userData.role, perms, 'export_data')
+    }
+  }
 
   const { data: leads } = await supabase
     .from('quiz_leads')
@@ -18,7 +38,7 @@ export default async function ContactsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Contatos</h1>
           <p className="text-gray-500 mt-1">Leads capturados pelo quiz</p>
         </div>
-        <ExportCSVButton leads={leads || []} />
+        {canExport && <ExportCSVButton leads={leads || []} />}
       </div>
 
       <Card>
