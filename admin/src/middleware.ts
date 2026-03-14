@@ -87,11 +87,17 @@ export async function middleware(request: NextRequest) {
       const hasAccess = (perms as Record<string, boolean>)[requiredPerm] !== false
       if (!hasAccess) {
         const url = request.nextUrl.clone()
-        // Find first accessible route
         const fallback = Object.entries(routePermissions).find(
-          ([, perm]) => (perms as Record<string, boolean>)[perm] !== false
+          ([route, perm]) => route !== pathname && (perms as Record<string, boolean>)[perm] !== false
         )
-        url.pathname = fallback ? fallback[0] : '/dashboard/settings'
+        if (fallback) {
+          url.pathname = fallback[0]
+        } else {
+          // No permissions at all — logout
+          await supabase.auth.signOut()
+          url.pathname = '/login'
+          url.searchParams.set('error', 'no_permissions')
+        }
         return NextResponse.redirect(url)
       }
     }

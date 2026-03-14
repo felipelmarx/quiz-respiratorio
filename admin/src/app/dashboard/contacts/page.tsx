@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { formatDate, formatPhone } from '@/lib/utils'
@@ -8,7 +7,7 @@ import { hasPermission, parsePermissions } from '@/lib/permissions'
 export default async function ContactsPage() {
   const supabase = await createClient()
 
-  // Permission check
+  // Check export_data permission (view_contacts is enforced by middleware)
   let canExport = true
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
@@ -18,11 +17,7 @@ export default async function ContactsPage() {
       .eq('id', user.id)
       .single()
     if (userData) {
-      const perms = parsePermissions(userData.permissions)
-      if (!hasPermission(userData.role, perms, 'view_contacts')) {
-        redirect('/dashboard')
-      }
-      canExport = hasPermission(userData.role, perms, 'export_data')
+      canExport = hasPermission(userData.role, parsePermissions(userData.permissions), 'export_data')
     }
   }
 

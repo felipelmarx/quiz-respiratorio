@@ -1,27 +1,12 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, getProfileLabel } from '@/lib/utils'
-import { hasPermission, parsePermissions } from '@/lib/permissions'
 import type { QuizProfile } from '@/lib/types/database'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-
-  // Permission check
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role, permissions')
-      .eq('id', user.id)
-      .single()
-    if (userData && !hasPermission(userData.role, parsePermissions(userData.permissions), 'view_dashboard')) {
-      redirect('/dashboard/settings')
-    }
-  }
 
   // Fetch stats
   const [

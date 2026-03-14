@@ -11,7 +11,6 @@ import { parsePermissions } from '@/lib/permissions'
 import {
   ALL_PERMISSIONS,
   PERMISSION_LABELS,
-  DEFAULT_PERMISSIONS,
   type Permission,
   type UserPermissions,
 } from '@/lib/types/database'
