@@ -21,5 +21,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git merge origin/${{ github.ref_name }} --no-edit
-          git push origin main
+          if git merge origin/${{ github.ref_name }} --no-edit; then
+            if [ -n "$(git diff HEAD origin/main)" ]; then
+              git push origin main
+              echo "Merged and pushed successfully."
+            else
+              echo "Already up to date. Nothing to push."
+            fi
+          else
+            echo "Merge failed. Manual intervention required."
+            exit 1
+          fi
