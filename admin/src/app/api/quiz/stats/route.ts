@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuthUser } from '@/lib/auth'
 import { hasPermission } from '@/lib/permissions'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const authUser = await getAuthUser()
