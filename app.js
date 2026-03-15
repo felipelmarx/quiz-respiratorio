@@ -38,6 +38,8 @@ const INSTRUCTOR_DEFAULTS = {
     ctaUrl: '',                      // Default CTA URL (empty = no redirect)
     ctaText: 'Quero Saber Mais',     // Default button text
     instructorName: '',              // No instructor by default
+    profissao: '',                   // e.g. 'psicólogo(a)', 'terapeuta'
+    cidade: '',                      // e.g. 'São Paulo'
 };
 
 function getInstructorConfig() {
@@ -46,7 +48,21 @@ function getInstructorConfig() {
         ctaUrl: params.get('cta_url') || INSTRUCTOR_DEFAULTS.ctaUrl,
         ctaText: params.get('cta_text') || INSTRUCTOR_DEFAULTS.ctaText,
         instructorName: params.get('instrutor') || INSTRUCTOR_DEFAULTS.instructorName,
+        profissao: params.get('profissao') || INSTRUCTOR_DEFAULTS.profissao,
+        cidade: params.get('cidade') || INSTRUCTOR_DEFAULTS.cidade,
     };
+}
+
+// ---- FAIXA HELPER ----
+function getProfileKey() {
+    if (totalScore <= 7) return 'functional';
+    if (totalScore <= 15) return 'moderate';
+    if (totalScore <= 23) return 'dysfunctional';
+    return 'severe';
+}
+
+function getFaixa() {
+    return FAIXA_MAP[getProfileKey()];
 }
 
 // ---- HAPTIC FEEDBACK ----
@@ -1314,12 +1330,20 @@ function showResults() {
 
     const profile = getProfile();
     const instructor = getInstructorConfig();
+    const faixa = getFaixa();
     const maxScore = 33;
     const riskPct = Math.min(100, Math.round((totalScore / maxScore) * 100));
     const healthScore = Math.max(0, 100 - riskPct);
     const personalizedBenefit = getPersonalizedBenefit();
+    const RC = RESULT_CONTENT;
 
-    // Category analysis
+    // Build instructor text for session block
+    const hasInstructor = !!instructor.instructorName;
+    const profissionalText = hasInstructor
+        ? `com <strong>${instructor.instructorName}</strong>${instructor.profissao ? `, ${instructor.profissao}` : ''}${instructor.cidade ? ` em ${instructor.cidade}` : ''}`
+        : 'com um profissional certificado em Respiração Funcional';
+
+    // Category analysis (for collapsible section)
     const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
         const level = getCategoryLevel(cat);
         const config = CATEGORY_ANALYSIS[cat];
@@ -1336,104 +1360,160 @@ function showResults() {
         };
     });
 
+    // CTA logic
+    const hasCtaUrl = !!instructor.ctaUrl;
+    const ctaButtonText = hasCtaUrl ? RC.cta.buttonText : RC.cta.buttonTextFallback;
+    const ctaAction = hasCtaUrl
+        ? `onclick="handleResultCta()"`
+        : `onclick="showApplicationForm()"`;
+    const ctaSubText = hasCtaUrl
+        ? `Ao clicar, você será direcionado(a) para escolher o melhor dia e horário para falar com ${instructor.instructorName || 'o profissional'}.`
+        : 'Clique para se aplicar a uma sessão demonstrativa gratuita.';
+
     const container = document.getElementById('result-container');
     container.innerHTML = `
-        <div class="result-hero">
-            <div class="result-particles-bg"></div>
-            <p class="result-greeting">Resultado preparado para <strong>${userName || 'você'}</strong></p>
+        <div class="result-laudo">
 
-            <div class="score-ring-container">
-                <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
-                    <svg viewBox="0 0 120 120">
-                        <circle class="ring-bg" cx="60" cy="60" r="52" />
-                        <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"
-                            stroke="${profile.color}"
-                            stroke-dasharray="326.73"
-                            stroke-dashoffset="326.73" />
-                    </svg>
-                    <div class="score-center">
-                        <span class="score-value" id="score-value">0</span>
-                        <span class="score-max">/100</span>
+            <!-- BLOCO 1: CABEÇALHO -->
+            <div class="result-block result-header-block" data-delay="0">
+                <div class="score-ring-container">
+                    <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="ring-bg" cx="60" cy="60" r="52" />
+                            <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"
+                                stroke="${profile.color}"
+                                stroke-dasharray="326.73"
+                                stroke-dashoffset="326.73" />
+                        </svg>
+                        <div class="score-center">
+                            <span class="score-value" id="score-value">0</span>
+                            <span class="score-max">/100</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="result-profile-badge" style="background: ${profile.gradient}">
-                ${profile.emoji} ${profile.title}
-            </div>
-            <p class="result-description">${profile.description}</p>
-        </div>
-
-        <div class="result-section fade-in-section">
-            <h3 class="section-title"><span class="section-icon">📊</span> Análise por Categoria</h3>
-            ${categories.map(cat => `
-                <div class="category-card">
-                    <div class="category-header">
-                        <span class="category-icon">${cat.icon}</span>
-                        <span class="category-name">${cat.name}</span>
-                        <span class="category-level" style="color: ${cat.levelColor}">${cat.levelLabel}</span>
-                    </div>
-                    <div class="category-bar-track">
-                        <div class="category-bar-fill" data-width="${cat.pct}" style="background: ${cat.levelColor}; width: 0%"></div>
-                    </div>
-                    <p class="category-insight">${cat.insight}</p>
-                    ${cat.refs && cat.refs.length > 0 ? `
-                    <div class="category-refs">
-                        ${cat.refs.map(ref => `<span class="ref-tag">${ref.author}, ${ref.year}</span>`).join('')}
-                    </div>` : ''}
-                </div>
-            `).join('')}
-        </div>
-
-        <div class="result-section fade-in-section">
-            <h3 class="section-title"><span class="section-icon">🧠</span> Insight Principal</h3>
-            <div class="insight-card" style="border-left: 4px solid ${profile.color}">
-                <p>${profile.mainInsight}</p>
-            </div>
-        </div>
-
-        <div class="result-section fade-in-section">
-            <h3 class="section-title"><span class="section-icon">🔬</span> ${NEUROSCIENCE_CONTENT.title}</h3>
-            ${NEUROSCIENCE_CONTENT.sections.map(section => `
-                <div class="neuro-card">
-                    <h4>${section.title}</h4>
-                    <p>${section.text}</p>
-                </div>
-            `).join('')}
-        </div>
-
-        <div class="result-section fade-in-section">
-            <h3 class="section-title"><span class="section-icon">📤</span> Compartilhar Resultado</h3>
-            <div class="share-buttons">
-                <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    Enviar via WhatsApp
-                </button>
-                <button class="share-btn share-copy" id="btn-copy-link" onclick="copyShareLink()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    Copiar Link
-                </button>
-            </div>
-        </div>
-
-        <div class="result-cta-section fade-in-section" id="application-section">
-            <div class="cta-card" style="border-top: 3px solid ${profile.color}">
-                <div id="cta-intro">
-                    <div class="cta-badge">Oportunidade Exclusiva</div>
-                    ${instructor.instructorName ? `<p class="cta-instructor">Indicado por <strong>${instructor.instructorName}</strong></p>` : ''}
-                    <p class="cta-personalized">Com base no seu teste, ${userName ? `<strong>${userName}</strong>, ` : ''}você é um forte candidato a uma sessão de demonstração de <strong>breathwork baseado em evidências</strong> para <strong>${personalizedBenefit}</strong>.</p>
-                    <p class="cta-subtitle">${profile.cta}</p>
+                <div class="result-profile-badge" style="background: ${profile.gradient}">
+                    ${profile.emoji} ${profile.title}
                 </div>
 
-                <button class="btn-primary btn-glow btn-full" id="btn-show-application" onclick="showApplicationForm()">
-                    Quero Participar Gratuitamente
+                <h1 class="laudo-title">${RC.header.title}</h1>
+                <h2 class="laudo-subtitle">${userName || 'Você'}, o seu padrão atual é <strong>${faixa.label}</strong> (${healthScore}/100).</h2>
+                <p class="laudo-apoio">${RC.header.apoio}</p>
+            </div>
+
+            <!-- BLOCO 2: INSIGHT RÁPIDO -->
+            <div class="result-block" data-delay="1">
+                <h3 class="laudo-h3">${RC.insightRapido.title}</h3>
+                <p class="laudo-text">${RC.insightRapido.text}</p>
+            </div>
+
+            <!-- BLOCO 3: DIA A DIA -->
+            <div class="result-block" data-delay="2">
+                <h3 class="laudo-h3">${RC.diaADia.title}</h3>
+                <p class="laudo-text severity-intro">${faixa.intro}</p>
+                <p class="laudo-text">${RC.diaADia.intro}</p>
+                <ul class="symptom-list">
+                    ${RC.diaADia.symptoms.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+                <p class="laudo-highlight">${RC.diaADia.closing}</p>
+            </div>
+
+            <!-- BLOCO 4: MECANISMO -->
+            <div class="result-block" data-delay="3">
+                <h3 class="laudo-h3">${RC.mecanismo.title}</h3>
+                <p class="laudo-text">${RC.mecanismo.intro}</p>
+                <div class="mechanism-steps">
+                    ${RC.mecanismo.steps.map(step => `
+                        <div class="mechanism-step">
+                            <div class="mechanism-step-num">${step.num}</div>
+                            <div class="mechanism-step-content">
+                                <strong>${step.title}</strong>
+                                <p>${step.text}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <p class="laudo-highlight">${RC.mecanismo.closing}</p>
+            </div>
+
+            <!-- BLOCO 5: PRÓXIMO PASSO -->
+            <div class="result-block" data-delay="4">
+                <h3 class="laudo-h3">${RC.proximoPasso.title}</h3>
+                <p class="laudo-text">${RC.proximoPasso.intro}</p>
+                <ul class="benefit-list">
+                    ${RC.proximoPasso.benefits.map(b => `<li>${b}</li>`).join('')}
+                </ul>
+            </div>
+
+            <!-- BLOCO 6: SESSÃO DEMONSTRATIVA -->
+            <div class="result-block session-card" data-delay="5">
+                <h3 class="laudo-h3">${RC.sessao.title}</h3>
+                <p class="laudo-text">Com base no seu resultado, você é um forte candidato a uma Sessão de Demonstração de Respiração Funcional ${profissionalText}.</p>
+                <p class="laudo-text">Na sessão online de aproximadamente 30 minutos, você vai:</p>
+                <ul class="benefit-list">
+                    ${RC.sessao.deliverables.map(d => `<li>${d}</li>`).join('')}
+                </ul>
+                <p class="laudo-disclaimer">${RC.sessao.disclaimer}</p>
+            </div>
+
+            <!-- BLOCO 7: URGÊNCIA SUAVE -->
+            <div class="result-block urgency-block" data-delay="6">
+                ${RC.urgencia.map(p => `<p class="urgency-text">${p}</p>`).join('')}
+            </div>
+
+            <!-- BLOCO 8: CTA -->
+            <div class="result-block cta-section" data-delay="7" id="application-section">
+                <button class="btn-cta-main" id="btn-show-application" ${ctaAction}>
+                    ${ctaButtonText}
                     <span class="btn-arrow">&rarr;</span>
                 </button>
+                <p class="cta-sub-text">${ctaSubText}</p>
 
                 <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
                     <!-- Multi-step form rendered dynamically -->
                 </div>
             </div>
+
+            <!-- ANÁLISE TÉCNICA (colapsável) -->
+            <div class="result-block" data-delay="8">
+                <details class="technical-details">
+                    <summary class="technical-summary">Ver análise técnica detalhada</summary>
+                    <div class="technical-content">
+                        ${categories.map(cat => `
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">${cat.icon}</span>
+                                    <span class="category-name">${cat.name}</span>
+                                    <span class="category-level" style="color: ${cat.levelColor}">${cat.levelLabel}</span>
+                                </div>
+                                <div class="category-bar-track">
+                                    <div class="category-bar-fill" data-width="${cat.pct}" style="background: ${cat.levelColor}; width: 0%"></div>
+                                </div>
+                                <p class="category-insight">${cat.insight}</p>
+                                ${cat.refs && cat.refs.length > 0 ? `
+                                <div class="category-refs">
+                                    ${cat.refs.map(ref => `<span class="ref-tag">${ref.author}, ${ref.year}</span>`).join('')}
+                                </div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </details>
+            </div>
+
+            <!-- COMPARTILHAR -->
+            <div class="result-block" data-delay="9">
+                <div class="share-buttons">
+                    <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Enviar via WhatsApp
+                    </button>
+                    <button class="share-btn share-copy" id="btn-copy-link" onclick="copyShareLink()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copiar Link
+                    </button>
+                </div>
+            </div>
+
         </div>
     `;
 
@@ -1498,29 +1578,38 @@ function observeFadeInSections() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
+                const delay = parseInt(entry.target.dataset.delay || 0) * 120;
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, delay);
                 observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.1 });
+    }, { threshold: 0.08 });
 
-    document.querySelectorAll('.fade-in-section').forEach(section => {
+    // Support both old and new selectors
+    document.querySelectorAll('.fade-in-section, .result-block').forEach(section => {
         observer.observe(section);
     });
 }
 
 // ---- CTA CLICK ----
-function handleCtaClick() {
+function handleResultCta() {
     const instructor = getInstructorConfig();
     haptic('medium');
-    trackEvent('cta_clicked', {
+    trackEvent('quiz_result_cta_click', {
         instructor: instructor.instructorName,
         cta_url: instructor.ctaUrl,
-        profile: getProfile().title
+        profile: getProfile().title,
+        total_score: totalScore
     });
     if (instructor.ctaUrl) {
         window.open(instructor.ctaUrl, '_blank');
     }
+}
+
+function handleCtaClick() {
+    handleResultCta();
 }
 
 // ---- CONFETTI CELEBRATION ----
