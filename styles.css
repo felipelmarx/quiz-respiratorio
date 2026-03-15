@@ -1605,6 +1605,406 @@ body {
 }
 
 /* ============================================
+   RESULTADO LAUDO - Design Apple / Disney
+   ============================================ */
+
+.result-laudo {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+}
+
+/* Result Blocks (reveal on scroll) */
+.result-block {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-bottom: 40px;
+}
+
+.result-block.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Header Block */
+.result-header-block {
+    text-align: center;
+    padding: 40px 0 20px;
+}
+
+.laudo-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+    margin: 20px 0 12px;
+    letter-spacing: -0.02em;
+}
+
+.laudo-subtitle {
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.laudo-subtitle strong {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.laudo-apoio {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    font-style: italic;
+    padding: 0 8px;
+}
+
+/* Content Blocks */
+.laudo-h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+}
+
+.laudo-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin-bottom: 12px;
+}
+
+.severity-intro {
+    color: var(--primary-dark);
+    font-weight: 500;
+    background: var(--green-light);
+    padding: 14px 18px;
+    border-radius: var(--radius-xs);
+    border-left: 3px solid var(--primary);
+    margin-bottom: 16px;
+}
+
+.laudo-highlight {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    line-height: 1.6;
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: var(--green-light);
+    border-radius: var(--radius-xs);
+}
+
+/* Symptom List */
+.symptom-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.symptom-list li {
+    position: relative;
+    padding: 10px 0 10px 32px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-bottom: 1px solid var(--border);
+}
+
+.symptom-list li:last-child {
+    border-bottom: none;
+}
+
+.symptom-list li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 14px;
+    width: 16px;
+    height: 16px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0.15;
+}
+
+.symptom-list li::after {
+    content: '\2713';
+    position: absolute;
+    left: 7px;
+    top: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Benefit List */
+.benefit-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+
+.benefit-list li {
+    position: relative;
+    padding: 10px 0 10px 32px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-bottom: 1px solid var(--border);
+}
+
+.benefit-list li:last-child {
+    border-bottom: none;
+}
+
+.benefit-list li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 14px;
+    width: 16px;
+    height: 16px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0.15;
+}
+
+.benefit-list li::after {
+    content: '\2713';
+    position: absolute;
+    left: 7px;
+    top: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Mechanism Steps */
+.mechanism-steps {
+    margin: 20px 0;
+    position: relative;
+    padding-left: 4px;
+}
+
+.mechanism-step {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 24px;
+    position: relative;
+}
+
+.mechanism-step:last-child {
+    padding-bottom: 0;
+}
+
+/* Connector line between steps */
+.mechanism-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 42px;
+    width: 2px;
+    height: calc(100% - 42px);
+    background: linear-gradient(180deg, var(--primary), rgba(45, 90, 61, 0.15));
+}
+
+.mechanism-step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(45, 90, 61, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.mechanism-step-content {
+    flex: 1;
+    padding-top: 2px;
+}
+
+.mechanism-step-content strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.mechanism-step-content p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Session Card */
+.session-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-md);
+}
+
+.laudo-disclaimer {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-style: italic;
+}
+
+/* Urgency Block */
+.urgency-block {
+    background: #FAFAF8;
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+    padding: 24px;
+}
+
+.urgency-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.urgency-text:last-child {
+    margin-bottom: 0;
+    font-weight: 500;
+    color: var(--text);
+}
+
+/* CTA Section */
+.cta-section {
+    text-align: center;
+    padding: 8px 0;
+}
+
+.btn-cta-main {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px 32px;
+    background: var(--gradient);
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 20px rgba(45, 90, 61, 0.25);
+    animation: ctaPulse 3s ease-in-out infinite;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-cta-main:active {
+    transform: scale(0.97);
+}
+
+.btn-cta-main .btn-arrow {
+    font-size: 18px;
+    transition: transform 0.3s;
+}
+
+@keyframes ctaPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(45, 90, 61, 0.25); }
+    50% { box-shadow: 0 4px 30px rgba(45, 90, 61, 0.4); }
+}
+
+.cta-sub-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+/* Technical Details (collapsible) */
+.technical-details {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.technical-summary {
+    padding: 16px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: var(--bg-card);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.technical-summary::-webkit-details-marker {
+    display: none;
+}
+
+.technical-summary::after {
+    content: '\25BC';
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: transform 0.3s;
+}
+
+details[open] .technical-summary::after {
+    transform: rotate(180deg);
+}
+
+.technical-content {
+    padding: 16px 20px;
+    background: var(--bg-light);
+}
+
+/* Tablet+ */
+@media (min-width: 480px) {
+    .laudo-title { font-size: 26px; }
+    .laudo-subtitle { font-size: 19px; }
+}
+
+@media (min-width: 768px) {
+    .result-laudo { padding: 0 24px 80px; }
+    .laudo-title { font-size: 30px; }
+    .laudo-subtitle { font-size: 20px; }
+    .laudo-h3 { font-size: 20px; }
+
+    .btn-cta-main:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(45, 90, 61, 0.35);
+    }
+
+    .btn-cta-main:hover .btn-arrow {
+        transform: translateX(4px);
+    }
+}
+
+/* ============================================
    CONFETTI CANVAS
    ============================================ */
 

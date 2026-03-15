@@ -536,7 +536,7 @@ const ANALYZING_STEPS = [
 ];
 
 // ============================================
-// NEUROCIÊNCIA - Conteúdo educativo final
+// NEUROCIÊNCIA - Conteúdo educativo final (mantido para compatibilidade)
 // ============================================
 
 const NEUROSCIENCE_CONTENT = {
@@ -555,4 +555,119 @@ const NEUROSCIENCE_CONTENT = {
             text: 'A reeducação respiratória corrige essa cascata bioquímica na raiz. Os resultados normalmente aparecem entre 2 a 6 semanas de prática consistente, com redução significativa da ansiedade e melhora no sono, energia e foco.'
         }
     ]
+};
+
+// ============================================
+// MAPEAMENTO DE FAIXAS DE GRAVIDADE
+// ============================================
+
+const FAIXA_MAP = {
+    functional: {
+        label: 'leve',
+        intro: 'No seu caso, os sinais ainda são iniciais, o que é uma ótima janela para intervir cedo.'
+    },
+    moderate: {
+        label: 'moderada',
+        intro: 'No seu caso, os sinais são moderados, indicando que uma intervenção guiada pode fazer grande diferença.'
+    },
+    dysfunctional: {
+        label: 'acentuada',
+        intro: 'No seu caso, os sinais já estão acentuados, o que aumenta a importância de uma intervenção guiada.'
+    },
+    severe: {
+        label: 'acentuada',
+        intro: 'No seu caso, os sinais já estão acentuados, o que aumenta a importância de uma intervenção guiada.'
+    }
+};
+
+// ============================================
+// CONTEÚDO DO LAUDO (9 ETAPAS)
+// ============================================
+
+const RESULT_CONTENT = {
+    // ETAPA 1 - Cabeçalho
+    header: {
+        title: 'Resultado do seu Teste de Ansiedade por Disfunção Respiratória',
+        apoio: 'Isso significa que a sua respiração está participando ativamente do ciclo da ansiedade, e não é "só coisa da sua cabeça".'
+    },
+
+    // ETAPA 2 - Insight Rápido
+    insightRapido: {
+        title: 'A boa notícia (e o alerta) em uma frase',
+        text: 'O seu teste mostra sinais de disfunção respiratória: um jeito de respirar que mantém o Sistema Nervoso Autônomo em estado de alerta. Ansiedade em si é normal. O problema é quando o sistema nervoso fica preso no modo sobrevivência e a respiração alimenta esse ciclo todos os dias.'
+    },
+
+    // ETAPA 3 - Dia a Dia
+    diaADia: {
+        title: 'Como isso costuma aparecer no dia a dia',
+        intro: 'Em pessoas com um padrão de respiração como o seu, é comum aparecer:',
+        symptoms: [
+            'Sensação de "peito apertado" ou falta de ar mesmo com exames normais.',
+            'Cabeça acelerada, dificuldade de "desligar" à noite.',
+            'Sono leve, acordar cansado(a).',
+            'Irritação, explosões de raiva ou choro "do nada".',
+            'Medo de perder o controle em situações simples (reuniões, trânsito, filas).'
+        ],
+        closing: 'Não é fraqueza. É fisiologia em modo de alerta. E isso é treinável.'
+    },
+
+    // ETAPA 4 - Mecanismo
+    mecanismo: {
+        title: 'Não é "só psicológico": é o seu sistema nervoso desregulado',
+        intro: 'De forma simples, o que o seu resultado indica é:',
+        steps: [
+            {
+                num: 1,
+                title: 'Respiração alterada',
+                text: 'Respirações rápidas, superficiais ou irregulares sinalizam perigo para o cérebro.'
+            },
+            {
+                num: 2,
+                title: 'Sistema nervoso em alerta',
+                text: 'O corpo interpreta essa respiração como se algo estivesse acontecendo, mesmo quando está tudo bem.'
+            },
+            {
+                num: 3,
+                title: 'Sintomas de ansiedade',
+                text: 'Coração acelerado, aperto no peito, pensamentos catastróficos, dificuldade de relaxar.'
+            }
+        ],
+        closing: 'Quando reeducamos a respiração, damos ao sistema nervoso um novo padrão de segurança. É isso que trabalhamos na sessão demonstrativa.'
+    },
+
+    // ETAPA 5 - Próximo Passo
+    proximoPasso: {
+        title: 'Seu próximo passo lógico depois deste teste',
+        intro: 'O teste mostrou onde a sua respiração está contribuindo para a ansiedade. O passo seguinte é testar, na prática, um protocolo específico de respiração funcional, guiado por um profissional, para:',
+        benefits: [
+            'Reduzir a ativação do sistema de estresse em poucos minutos.',
+            'Sentir no corpo a diferença entre "respirar no automático" e "respirar para regular o sistema nervoso".',
+            'Entender se esse tipo de trabalho faz sentido para o seu caso.'
+        ]
+    },
+
+    // ETAPA 6 - Sessão Demonstrativa
+    sessao: {
+        title: 'Convite para uma Sessão de Demonstração de Respiração Funcional',
+        deliverables: [
+            'Revisar, junto com o profissional, os principais achados do seu teste.',
+            'Experimentar um protocolo de respiração funcional adequado ao seu nível atual.',
+            'Aprender como aplicar esse protocolo no seu dia a dia nos próximos dias.',
+            'Tirar dúvidas sobre respiração, ansiedade e sistema nervoso.'
+        ],
+        disclaimer: 'A sessão tem caráter educativo e de orientação, não substitui acompanhamento médico ou psicológico, mas costuma ser o primeiro passo para ganhar controle sobre o próprio estado interno.'
+    },
+
+    // ETAPA 7 - Urgência Suave
+    urgencia: [
+        'Para garantir qualidade no atendimento, cada profissional abre poucas vagas de demonstração por semana.',
+        'O seu resultado ficará disponível aqui por alguns dias, mas as vagas para sessão costumam preencher rápido.',
+        'Se você quer aproveitar enquanto as informações do teste ainda estão frescas, o melhor momento para agendar é agora.'
+    ],
+
+    // ETAPA 8 - CTA
+    cta: {
+        buttonText: 'Quero agendar minha sessão de demonstração',
+        buttonTextFallback: 'Quero participar da sessão demonstrativa'
+    }
 };
