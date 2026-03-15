@@ -106,12 +106,22 @@ export default function InstructorsPage() {
   }
 
   async function togglePermission(id: string, permission: Permission, currentPerms: UserPermissions) {
-    const supabase = createClient()
     const updated = { ...currentPerms, [permission]: !currentPerms[permission] }
-    await supabase.from('users').update({ permissions: updated }).eq('id', id)
+    // Optimistic update
     setInstructors((prev) =>
       prev.map((inst) => inst.id === id ? { ...inst, permissions: updated } : inst)
     )
+    const res = await fetch(`/api/admin/instructors/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    })
+    if (!res.ok) {
+      // Revert on failure
+      setInstructors((prev) =>
+        prev.map((inst) => inst.id === id ? { ...inst, permissions: currentPerms } : inst)
+      )
+    }
   }
 
   return (

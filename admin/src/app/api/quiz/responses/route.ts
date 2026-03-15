@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20') || 20), 100)
     const profile = searchParams.get('profile')
     const search = searchParams.get('search')
     const offset = (page - 1) * limit
@@ -53,9 +53,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`, {
-        referencedTable: 'quiz_leads',
-      })
+      // Sanitize search to prevent PostgREST filter injection
+      const sanitized = search.replace(/[%,.()"'\\]/g, '').trim()
+      if (sanitized) {
+        query = query.or(`name.ilike.%${sanitized}%,email.ilike.%${sanitized}%`, {
+          referencedTable: 'quiz_leads',
+        })
+      }
     }
 
     const { data, count, error } = await query

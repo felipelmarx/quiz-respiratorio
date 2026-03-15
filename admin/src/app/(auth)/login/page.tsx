@@ -18,14 +18,19 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/dashboard'
+  const rawRedirect = searchParams.get('redirect') || '/dashboard'
+  // Prevent open redirect: only allow relative paths, block protocol-relative URLs
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard'
   const errorParam = searchParams.get('error')
+
+  const errorMessages: Record<string, string> = {
+    inactive: 'Sua conta está desativada. Contate o administrador.',
+    no_permissions: 'Sua conta não possui permissões. Contate o administrador.',
+  }
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(
-    errorParam === 'inactive' ? 'Sua conta está desativada. Contate o administrador.' : ''
-  )
+  const [error, setError] = useState(errorParam ? errorMessages[errorParam] || '' : '')
   const [loading, setLoading] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {

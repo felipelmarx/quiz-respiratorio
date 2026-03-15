@@ -45,3 +45,11 @@ export const instructorUpdateSchema = z.object({
   slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/).optional(),
   is_active: z.boolean().optional(),
 })
+
+export const permissionsSchema = z.object({
+  view_dashboard: z.boolean(),
+  view_responses: z.boolean(),
+  view_contacts: z.boolean(),
+  export_data: z.boolean(),
+  manage_settings: z.boolean(),
+})
