@@ -31,51 +31,45 @@
         <div id="welcome-screen" class="screen active">
             <div class="welcome-wrapper">
                 <div class="welcome-logo">
-                    <svg class="logo-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 6C18 6 12 10 10 16C8 22 10 28 14 32C16 34 20 38 24 42C28 38 32 34 34 32C38 28 40 22 38 16C36 10 30 6 24 6Z" fill="url(#leafGrad)" opacity="0.15"/>
-                        <path d="M17 20C17 16 19 13 22 12C20 15 19 18 20 22C21 26 24 28 24 28C24 28 21 26 19 23C18 21.5 17 20 17 20Z" fill="#2D5A3D" opacity="0.6"/>
-                        <path d="M31 20C31 16 29 13 26 12C28 15 29 18 28 22C27 26 24 28 24 28C24 28 27 26 29 23C30 21.5 31 20 31 20Z" fill="#2D5A3D" opacity="0.6"/>
-                        <path d="M24 14C24 14 22 18 22 24C22 28 24 32 24 32C24 32 26 28 26 24C26 18 24 14 24 14Z" fill="#4A7C59" opacity="0.5"/>
-                        <defs>
-                            <linearGradient id="leafGrad" x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#2D5A3D"/>
-                                <stop offset="1" stop-color="#6ba378"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    <span class="logo-text">iBreathwork</span>
+                    <img src="logo-ibreathwork.svg" alt="iBreathwork" class="logo-img" />
                 </div>
 
+                <div class="welcome-divider"></div>
+
                 <h1 class="welcome-title">
-                    Teste de Ansiedade<br>
-                    <span class="welcome-por">por</span> <span class="gradient-text">Disfunção Respiratória</span>
+                    <span class="welcome-title-small">Teste de Ansiedade por</span>
+                    <span class="gradient-text">Disfunção Respiratória</span>
                 </h1>
 
                 <p class="welcome-subtitle">
-                    Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia.
+                    Descubra como sua respiração influencia a ansiedade que você sente — e o que fazer a respeito.
                 </p>
 
                 <div class="welcome-badges">
                     <div class="badge">
-                        <span class="badge-icon">⏱</span>
-                        <span>5 min</span>
+                        <span class="badge-dot"></span>
+                        <span>5 minutos</span>
                     </div>
                     <div class="badge">
-                        <span class="badge-icon">☑</span>
-                        <span>Gratuito</span>
+                        <span class="badge-dot"></span>
+                        <span>100% Gratuito</span>
                     </div>
                     <div class="badge">
-                        <span class="badge-icon">🔬</span>
+                        <span class="badge-dot"></span>
                         <span>Base Científica</span>
                     </div>
                 </div>
 
                 <button id="start-btn" class="btn-primary btn-glow" onclick="startQuiz()">
-                    Iniciar Avaliação Gratuita
-                    <span class="btn-arrow">&rarr;</span>
+                    Começar Avaliação
+                    <span class="btn-arrow">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
                 </button>
 
-                <p class="welcome-trust">Gratuito e confidencial. Mais de 2.000 pessoas já fizeram.</p>
+                <p class="welcome-trust">
+                    Gratuito e confidencial<span class="trust-sep">&middot;</span>Mais de 2.000 avaliações realizadas
+                </p>
             </div>
         </div>
 
