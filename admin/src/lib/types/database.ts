@@ -47,6 +47,9 @@ export interface Database {
           slug: string | null
           is_active: boolean
           permissions: UserPermissions
+          profissao: string | null
+          cidade: string | null
+          nome_clinica: string | null
           created_at: string
           updated_at: string
         }
@@ -60,6 +63,9 @@ export interface Database {
           slug?: string | null
           is_active?: boolean
           permissions?: UserPermissions
+          profissao?: string | null
+          cidade?: string | null
+          nome_clinica?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -73,6 +79,9 @@ export interface Database {
           slug?: string | null
           is_active?: boolean
           permissions?: UserPermissions
+          profissao?: string | null
+          cidade?: string | null
+          nome_clinica?: string | null
           updated_at?: string
         }
       }

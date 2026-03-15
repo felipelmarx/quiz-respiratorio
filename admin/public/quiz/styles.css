@@ -1355,20 +1355,103 @@ body {
     z-index: 1;
 }
 
-/* Result Hero */
-.result-hero {
-    text-align: center;
-    padding: 32px 0;
-    position: relative;
+/* ============================================
+   DISNEY-LEVEL RESULT PAGE
+   ============================================ */
+
+/* --- Disney Reveal System --- */
+.disney-reveal {
+    opacity: 0;
+    transform: translateY(40px) scale(0.97);
+    will-change: transform, opacity;
 }
 
-.result-greeting {
+.disney-reveal.visible {
+    animation: disneyReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes disneyReveal {
+    0% { opacity: 0; transform: translateY(40px) scale(0.97); }
+    50% { opacity: 1; transform: translateY(-6px) scale(1.01); }
+    75% { transform: translateY(3px) scale(0.995); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Shimmer Text Effect on H3 --- */
+.shimmer-text {
+    background: linear-gradient(
+        110deg,
+        var(--text) 35%,
+        var(--primary-light) 50%,
+        var(--text) 65%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmerText 3s ease-in-out infinite;
+}
+
+@keyframes shimmerText {
+    0%, 100% { background-position: 100% center; }
+    50% { background-position: 0% center; }
+}
+
+/* --- Result Header (Bloco 1) --- */
+.result-header {
+    text-align: center;
+    padding: 32px 0 24px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+}
+
+.result-title {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+}
+
+.result-subtitle {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.severity-tag {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
+    -webkit-text-fill-color: white;
+    background-clip: unset;
+    -webkit-background-clip: unset;
+}
+
+.severity-leve { background: var(--green); color: white; }
+.severity-moderada { background: var(--yellow); color: #1A1A1A; -webkit-text-fill-color: #1A1A1A; }
+.severity-acentuada { background: var(--red); color: white; }
+
+.score-inline {
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--text-dim);
+}
+
+.result-support-line {
     font-size: 14px;
     color: var(--text-secondary);
-    margin-bottom: 20px;
+    line-height: 1.7;
+    padding: 0 4px;
+    font-style: italic;
 }
 
-/* Score Ring */
+/* --- Score Ring (kept + enhanced) --- */
 .score-ring-container {
     display: flex;
     justify-content: center;
@@ -1379,7 +1462,8 @@ body {
     position: relative;
     width: 150px;
     height: 150px;
-    filter: drop-shadow(0 0 15px var(--ring-glow));
+    filter: drop-shadow(0 0 20px var(--ring-glow));
+    transition: filter 1s ease;
 }
 
 .score-ring svg {
@@ -1411,7 +1495,7 @@ body {
 }
 
 .score-value {
-    font-size: 40px;
+    font-size: 42px;
     font-weight: 800;
     color: var(--text);
 }
@@ -1420,189 +1504,387 @@ body {
     font-size: 14px;
     color: var(--text-dim);
     align-self: flex-end;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
-.result-profile-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    border-radius: 100px;
-    font-size: 15px;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 16px;
-}
-
-.result-description {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    padding: 0 4px;
-}
-
-/* Result Sections */
-.result-section {
-    margin-top: 32px;
-}
-
-.section-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text);
-}
-
-.section-icon {
-    font-size: 18px;
-}
-
-/* Category Cards */
-.category-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 18px;
-    margin-bottom: 12px;
-    box-shadow: var(--shadow);
-}
-
-.category-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.category-icon {
-    font-size: 18px;
-}
-
-.category-name {
-    font-size: 14px;
-    font-weight: 600;
-    flex: 1;
-    color: var(--text);
-}
-
-.category-level {
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.category-bar-track {
-    height: 6px;
-    background: rgba(0, 0, 0, 0.06);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 12px;
-}
-
-.category-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.category-insight {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-.category-refs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.ref-tag {
-    font-size: 10px;
-    color: var(--text-dim);
-    background: var(--bg-light);
-    padding: 2px 8px;
-    border-radius: 10px;
-    letter-spacing: 0.01em;
-    line-height: 1.5;
-}
-
-/* Insight Card */
-.insight-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 20px;
-    box-shadow: var(--shadow);
-}
-
-.insight-card p {
-    font-size: 15px;
-    line-height: 1.7;
-    color: var(--text-secondary);
-}
-
-/* Neuroscience Cards */
-.neuro-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 18px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow);
-}
-
-.neuro-card h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: var(--text);
-}
-
-.neuro-card p {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.65;
-}
-
-/* CTA Section */
-.result-cta-section {
-    margin-top: 32px;
-}
-
-.cta-card {
+/* --- Result Blocks (Blocos 2-7) --- */
+.result-block {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 28px 24px;
-    text-align: center;
-    box-shadow: var(--shadow-md);
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
 }
 
-.cta-instructor {
-    font-size: 13px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
+.result-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent, var(--primary));
+    border-radius: 4px 0 0 4px;
+    opacity: 0.7;
 }
 
-
-.cta-card h3 {
-    font-size: 20px;
+.block-title {
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.4;
+    padding-left: 8px;
 }
 
-.cta-card p {
+.block-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin-bottom: 16px;
+}
+
+.block-text:last-child {
+    margin-bottom: 0;
+}
+
+/* --- Severity Intro (Bloco 3) --- */
+.severity-intro {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--severity-color, var(--text));
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: var(--radius-xs);
+    border-left: 3px solid var(--severity-color, var(--primary));
+}
+
+/* --- Symptom List (Bloco 3) --- */
+.symptom-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+}
+
+.symptom-item {
     font-size: 14px;
     color: var(--text-secondary);
     line-height: 1.6;
-    margin-bottom: 24px;
+    padding: 10px 14px 10px 14px;
+    margin-bottom: 6px;
+    background: var(--bg-light);
+    border-radius: var(--radius-xs);
+    position: relative;
+    padding-left: 30px;
+    opacity: 0;
+    transform: translateX(-16px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+.symptom-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.symptom-item::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 6px rgba(220, 53, 69, 0.4);
+}
+
+/* --- Highlight Quote --- */
+.highlight-quote {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(45, 90, 61, 0.06), rgba(45, 90, 61, 0.02));
+    border-left: 4px solid var(--accent, var(--primary));
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+    line-height: 1.6;
+}
+
+/* --- Mechanism Steps (Bloco 4) --- */
+.mechanism-steps {
+    margin: 16px 0;
+}
+
+.mechanism-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mechanism-step.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.step-content {
+    flex: 1;
+    padding-top: 4px;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.step-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.step-connector {
+    display: flex;
+    justify-content: center;
+    padding: 0 0 0 18px;
+    height: 28px;
+    overflow: hidden;
+}
+
+.connector-line {
+    width: 2px;
+    height: 0;
+    background: linear-gradient(to bottom, var(--primary), var(--primary-light));
+    border-radius: 1px;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-connector.visible .connector-line {
+    height: 100%;
+}
+
+.mechanism-closing {
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* --- Benefit List (Bloco 5) --- */
+.benefit-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefit-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    opacity: 0;
+    transform: translateX(-16px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.benefit-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.benefit-item:last-child {
+    border-bottom: none;
+}
+
+.benefit-check {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--green);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+/* --- Session Block (Bloco 6) --- */
+.result-session {
+    border: 1px solid rgba(45, 90, 61, 0.2);
+    background: linear-gradient(135deg, rgba(45, 90, 61, 0.03), rgba(255, 255, 255, 1));
+}
+
+.session-details {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.deliverable-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+}
+
+.deliverable-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 8px 0;
+    opacity: 0;
+    transform: translateX(-16px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.deliverable-item.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.deliverable-icon {
+    color: var(--primary);
+    font-size: 8px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.session-disclaimer {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    padding: 12px;
+    background: var(--bg-light);
+    border-radius: var(--radius-xs);
+    font-style: italic;
+}
+
+/* --- Urgency Block (Bloco 7) --- */
+.urgency-block {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.04), rgba(255, 255, 255, 1));
+    border-left: 4px solid var(--accent, var(--yellow));
+}
+
+.urgency-block::before {
+    display: none;
+}
+
+.urgency-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.urgency-text:last-child {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* --- CTA Button (Bloco 8) --- */
+.result-cta {
+    text-align: center;
+    padding: 8px 0 16px;
+}
+
+.cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: inherit;
+    color: white;
+    background: var(--btn-gradient, var(--gradient));
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.cta-btn.disney-glow {
+    animation: ctaPulseGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes ctaPulseGlow {
+    0%, 100% { box-shadow: 0 4px 20px var(--btn-glow, rgba(45, 90, 61, 0.3)); }
+    50% { box-shadow: 0 6px 35px var(--btn-glow, rgba(45, 90, 61, 0.5)), 0 0 60px var(--btn-glow, rgba(45, 90, 61, 0.15)); }
+}
+
+.cta-btn:active {
+    transform: scale(0.97);
+}
+
+.cta-arrow {
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease;
+}
+
+.cta-sub-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+/* --- Footer --- */
+.result-footer {
+    text-align: center;
+    padding: 24px 0 8px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+}
+
+.result-footer p {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+/* --- Legacy classes (kept for compatibility) --- */
+.result-section { margin-top: 32px; }
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.fade-in-section { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+.fade-in-section.visible { opacity: 1; transform: translateY(0); }
 
 /* ============================================
    CONFETTI CANVAS
@@ -1766,18 +2048,63 @@ body {
         transform: translateX(4px);
     }
 
-    .share-whatsapp:hover {
-        background: #1da851;
-        transform: translateY(-2px);
-    }
-
-    .share-copy:hover {
-        background: var(--bg-light);
-        transform: translateY(-2px);
-    }
-
     .result-container {
         padding: 32px 24px 80px;
+    }
+
+    .result-title {
+        font-size: 24px;
+    }
+
+    .result-subtitle {
+        font-size: 18px;
+    }
+
+    .block-title {
+        font-size: 19px;
+    }
+
+    .cta-btn:hover {
+        transform: translateY(-3px) scale(1.02);
+    }
+
+    .cta-btn:hover .cta-arrow {
+        transform: translateX(4px);
+    }
+}
+
+/* Accessibility: Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+    .disney-reveal {
+        opacity: 1;
+        transform: none;
+    }
+
+    .disney-reveal.visible {
+        animation: none;
+    }
+
+    .shimmer-text {
+        animation: none;
+        -webkit-text-fill-color: var(--text);
+    }
+
+    .cta-btn.disney-glow {
+        animation: none;
+    }
+
+    .symptom-item,
+    .benefit-item,
+    .deliverable-item,
+    .mechanism-step {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .connector-line {
+        height: 100% !important;
+        transition: none;
     }
 }
 

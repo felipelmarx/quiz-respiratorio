@@ -64,6 +64,9 @@ export async function POST(request: NextRequest) {
         whatsapp: data.whatsapp || null,
         slug,
         is_active: true,
+        profissao: data.profissao || null,
+        cidade: data.cidade || null,
+        nome_clinica: data.nome_clinica || null,
       })
 
     if (profileError) {

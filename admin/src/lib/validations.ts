@@ -40,6 +40,9 @@ export const instructorCreateSchema = z.object({
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   whatsapp: z.string().max(20).optional(),
   slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/, 'Slug: apenas letras minúsculas, números e hífens').optional(),
+  profissao: z.string().max(100).optional(),
+  cidade: z.string().max(100).optional(),
+  nome_clinica: z.string().max(200).optional(),
 })
 
 export const instructorUpdateSchema = z.object({
@@ -47,6 +50,9 @@ export const instructorUpdateSchema = z.object({
   whatsapp: z.string().max(20).optional(),
   slug: z.string().min(2).max(50).regex(/^[a-z0-9-]+$/).optional(),
   is_active: z.boolean().optional(),
+  profissao: z.string().max(100).optional(),
+  cidade: z.string().max(100).optional(),
+  nome_clinica: z.string().max(200).optional(),
 })
 
 export const permissionsSchema = z.object({
