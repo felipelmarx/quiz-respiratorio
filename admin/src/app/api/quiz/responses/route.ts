@@ -1,27 +1,21 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { hasPermission, parsePermissions } from '@/lib/permissions'
+import { getAuthUser } from '@/lib/auth'
+import { hasPermission } from '@/lib/permissions'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const authUser = await getAuthUser()
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Permission check
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role, permissions')
-      .eq('id', user.id)
-      .single()
-
-    if (!userData || !hasPermission(userData.role, parsePermissions(userData.permissions), 'view_responses')) {
+    if (!hasPermission(authUser.role, authUser.permissions, 'view_responses')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 
+    const supabase = await createClient()
     const searchParams = request.nextUrl.searchParams
     const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
     const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20') || 20), 100)

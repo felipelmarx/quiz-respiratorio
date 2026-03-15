@@ -80,20 +80,22 @@ export async function middleware(request: NextRequest) {
   }
 
   // Permission-based route blocking (instructors only, masters bypass)
-  if (userData?.role === 'instructor' && userData.permissions) {
+  if (userData?.role === 'instructor') {
     const requiredPerm = routePermissions[pathname]
     if (requiredPerm) {
-      const perms = typeof userData.permissions === 'object' ? userData.permissions : {}
-      const hasAccess = (perms as Record<string, boolean>)[requiredPerm] !== false
+      const perms = typeof userData.permissions === 'object' && userData.permissions
+        ? (userData.permissions as Record<string, boolean>)
+        : {}
+      // Default-deny: permission must be explicitly true
+      const hasAccess = perms[requiredPerm] === true
       if (!hasAccess) {
         const url = request.nextUrl.clone()
         const fallback = Object.entries(routePermissions).find(
-          ([route, perm]) => route !== pathname && (perms as Record<string, boolean>)[perm] !== false
+          ([route, perm]) => route !== pathname && perms[perm] === true
         )
         if (fallback) {
           url.pathname = fallback[0]
         } else {
-          // No permissions at all — logout
           await supabase.auth.signOut()
           url.pathname = '/login'
           url.searchParams.set('error', 'no_permissions')

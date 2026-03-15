@@ -20,7 +20,10 @@ export const quizSubmissionSchema = z.object({
   phone: z.string().max(20).optional(),
   referral: z.string().email().max(255).optional().or(z.literal('')),
   instructor_slug: z.string().max(100).optional(),
-  answers: z.record(z.string(), z.unknown()),
+  answers: z.record(z.string().max(50), z.union([z.string(), z.number(), z.boolean(), z.null()])).refine(
+    (obj) => Object.keys(obj).length <= 50,
+    'Máximo de 50 respostas'
+  ),
   scores: quizScoresSchema,
   total_score: z.number().min(0).max(33),
   profile: quizProfileSchema,

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth'
 import { permissionsSchema } from '@/lib/validations'
 
 export async function PATCH(
@@ -7,22 +8,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const authUser = await getAuthUser()
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { data: caller } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (caller?.role !== 'master') {
+    if (authUser.role !== 'master') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
+
+    const supabase = await createClient()
 
     const { id } = await params
     const body = await request.json()

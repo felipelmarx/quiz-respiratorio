@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@supabase/supabase-js'
 import { quizSubmissionSchema } from '@/lib/validations'
+
+// Anon client for public submissions (respects RLS, unlike admin client)
+function createAnonClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // Simple in-memory rate limiter (per IP, 10 requests per minute)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -40,19 +49,15 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data
-    const supabase = createAdminClient()
+    const supabase = createAnonClient()
 
-    // Resolve instructor slug to ID
+    // Resolve instructor slug to ID via RPC (SECURITY DEFINER, safe for anon)
     let instructorId: string | null = null
     if (data.instructor_slug) {
-      const { data: instructor } = await supabase
-        .from('users')
-        .select('id')
-        .eq('slug', data.instructor_slug)
-        .eq('is_active', true)
-        .single()
-
-      instructorId = instructor?.id || null
+      const { data: id } = await supabase.rpc('resolve_instructor_slug', {
+        p_slug: data.instructor_slug,
+      })
+      instructorId = id || null
     }
 
     // Insert lead
