@@ -13,6 +13,28 @@ memory/user.md        — User context, goals, and project overview
 
 At the **end of every session** (or when significant decisions are made), update these files with any new information learned during the session.
 
+## Decision Logging System
+
+Every time a significant decision is made, **append a row to `memory/decisions.csv`** (pipe-delimited):
+```
+date|decision|reasoning|expected_outcome|review_date|status
+```
+- `date` — YYYY-MM-DD
+- `decision` — What was decided
+- `reasoning` — Why this choice was made
+- `expected_outcome` — What we expect to happen
+- `review_date` — date + 30 days (YYYY-MM-DD)
+- `status` — `ACTIVE` (new) or `REVIEW DUE` (flagged by cron)
+
+**Scripts:**
+- `bash memory/review.sh` — Show decisions flagged for review
+- `bash memory/cron-check.sh` — Check and flag decisions that hit their review date
+
+**Cron setup** (daily at 9am):
+```
+0 9 * * * cd /path/to/quiz-respiratorio && bash memory/cron-check.sh
+```
+
 ---
 
 ## Project Structure
