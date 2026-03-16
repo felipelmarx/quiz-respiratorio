@@ -536,7 +536,7 @@ const ANALYZING_STEPS = [
 ];
 
 // ============================================
-// NEUROCIÊNCIA - Conteúdo educativo final (legacy, mantido para compatibilidade)
+// NEUROCIÊNCIA - Conteúdo educativo final (mantido para compatibilidade)
 // ============================================
 
 const NEUROSCIENCE_CONTENT = {
@@ -558,41 +558,49 @@ const NEUROSCIENCE_CONTENT = {
 };
 
 // ============================================
-// MAPEAMENTO DE FAIXAS DE CLASSIFICAÇÃO
+// MAPEAMENTO DE FAIXAS DE GRAVIDADE
 // ============================================
 
-const FAIXA_LABELS = {
-    funcional: 'leve',
-    atencao_moderada: 'moderada',
-    disfuncao: 'acentuada',
-    disfuncao_severa: 'acentuada'
+const FAIXA_MAP = {
+    functional: {
+        label: 'leve',
+        intro: 'No seu caso, os sinais ainda são iniciais, o que é uma ótima janela para intervir cedo.'
+    },
+    moderate: {
+        label: 'moderada',
+        intro: 'No seu caso, os sinais são moderados, indicando que uma intervenção guiada pode fazer grande diferença.'
+    },
+    dysfunctional: {
+        label: 'acentuada',
+        intro: 'No seu caso, os sinais já estão acentuados, o que aumenta a importância de uma intervenção guiada.'
+    },
+    severe: {
+        label: 'acentuada',
+        intro: 'No seu caso, os sinais já estão acentuados, o que aumenta a importância de uma intervenção guiada.'
+    }
 };
 
 // ============================================
-// CONTEÚDO DA PÁGINA DE RESULTADO (9 Etapas)
+// CONTEÚDO DO LAUDO (9 ETAPAS)
 // ============================================
 
 const RESULT_CONTENT = {
-    // ETAPA 1 — Cabeçalho
+    // ETAPA 1 - Cabeçalho
     header: {
         title: 'Resultado do seu Teste de Ansiedade por Disfunção Respiratória',
-        supportLine: 'Isso significa que a sua respiração está participando ativamente do ciclo da ansiedade, e não é "só coisa da sua cabeça".'
+        apoio: 'Isso significa que a sua respiração está participando ativamente do ciclo da ansiedade, e não é "só coisa da sua cabeça".'
     },
 
-    // ETAPA 2 — Insight rápido
+    // ETAPA 2 - Insight Rápido
     insightRapido: {
         title: 'A boa notícia (e o alerta) em uma frase',
         text: 'O seu teste mostra sinais de disfunção respiratória: um jeito de respirar que mantém o Sistema Nervoso Autônomo em estado de alerta. Ansiedade em si é normal. O problema é quando o sistema nervoso fica preso no modo sobrevivência e a respiração alimenta esse ciclo todos os dias.'
     },
 
-    // ETAPA 3 — Dia a dia
+    // ETAPA 3 - Dia a Dia
     diaADia: {
         title: 'Como isso costuma aparecer no dia a dia',
-        conditionals: {
-            leve: 'No seu caso, os sinais ainda são iniciais, o que é uma ótima janela para intervir cedo.',
-            moderada: 'Em pessoas com um padrão de respiração como o seu, é comum aparecer:',
-            acentuada: 'No seu caso, os sinais já estão acentuados, o que aumenta a importância de uma intervenção guiada.'
-        },
+        intro: 'Em pessoas com um padrão de respiração como o seu, é comum aparecer:',
         symptoms: [
             'Sensação de "peito apertado" ou falta de ar mesmo com exames normais.',
             'Cabeça acelerada, dificuldade de "desligar" à noite.',
@@ -603,23 +611,23 @@ const RESULT_CONTENT = {
         closing: 'Não é fraqueza. É fisiologia em modo de alerta. E isso é treinável.'
     },
 
-    // ETAPA 4 — Mecanismo
+    // ETAPA 4 - Mecanismo
     mecanismo: {
         title: 'Não é "só psicológico": é o seu sistema nervoso desregulado',
         intro: 'De forma simples, o que o seu resultado indica é:',
         steps: [
             {
-                number: 1,
+                num: 1,
                 title: 'Respiração alterada',
                 text: 'Respirações rápidas, superficiais ou irregulares sinalizam perigo para o cérebro.'
             },
             {
-                number: 2,
+                num: 2,
                 title: 'Sistema nervoso em alerta',
                 text: 'O corpo interpreta essa respiração como se algo estivesse acontecendo, mesmo quando está tudo bem.'
             },
             {
-                number: 3,
+                num: 3,
                 title: 'Sintomas de ansiedade',
                 text: 'Coração acelerado, aperto no peito, pensamentos catastróficos, dificuldade de relaxar.'
             }
@@ -627,7 +635,7 @@ const RESULT_CONTENT = {
         closing: 'Quando reeducamos a respiração, damos ao sistema nervoso um novo padrão de segurança. É isso que trabalhamos na sessão demonstrativa.'
     },
 
-    // ETAPA 5 — Próximo passo
+    // ETAPA 5 - Próximo Passo
     proximoPasso: {
         title: 'Seu próximo passo lógico depois deste teste',
         intro: 'O teste mostrou onde a sua respiração está contribuindo para a ansiedade. O passo seguinte é testar, na prática, um protocolo específico de respiração funcional, guiado por um profissional, para:',
@@ -638,14 +646,9 @@ const RESULT_CONTENT = {
         ]
     },
 
-    // ETAPA 6 — Sessão demonstrativa
+    // ETAPA 6 - Sessão Demonstrativa
     sessao: {
         title: 'Convite para uma Sessão de Demonstração de Respiração Funcional',
-        // Template: use {{profissional_nome}}, {{profissao}}, {{cidade}}
-        introTemplate: 'Com base no seu resultado, você é um forte candidato a uma Sessão de Demonstração de Respiração Funcional',
-        introWithProfessional: 'com {{profissional_nome}}, {{profissao}} em {{cidade}}.',
-        introGeneric: 'com um profissional certificado do iBreathwork.',
-        sessionDetails: 'Na sessão online de aproximadamente 30 minutos, você vai:',
         deliverables: [
             'Revisar, junto com o profissional, os principais achados do seu teste.',
             'Experimentar um protocolo de respiração funcional adequado ao seu nível atual.',
@@ -655,23 +658,16 @@ const RESULT_CONTENT = {
         disclaimer: 'A sessão tem caráter educativo e de orientação, não substitui acompanhamento médico ou psicológico, mas costuma ser o primeiro passo para ganhar controle sobre o próprio estado interno.'
     },
 
-    // ETAPA 7 — Urgência suave
+    // ETAPA 7 - Urgência Suave
     urgencia: [
         'Para garantir qualidade no atendimento, cada profissional abre poucas vagas de demonstração por semana.',
         'O seu resultado ficará disponível aqui por alguns dias, mas as vagas para sessão costumam preencher rápido.',
         'Se você quer aproveitar enquanto as informações do teste ainda estão frescas, o melhor momento para agendar é agora.'
     ],
 
-    // ETAPA 8 — CTA
+    // ETAPA 8 - CTA
     cta: {
         buttonText: 'Quero agendar minha sessão de demonstração',
-        subTextTemplate: 'Ao clicar, você será direcionado(a) para escolher o melhor dia e horário para falar com {{profissional_nome}}.',
-        subTextGeneric: 'Ao clicar, você será direcionado(a) para escolher o melhor dia e horário.'
-    },
-
-    // Rodapé
-    footer: {
-        withProfessional: 'Este laudo foi gerado automaticamente pelo sistema iBreathwork e será revisado por {{profissional_nome}}, {{profissao}}.',
-        generic: 'Este laudo foi gerado automaticamente pelo sistema iBreathwork.'
+        buttonTextFallback: 'Quero participar da sessão demonstrativa'
     }
 };

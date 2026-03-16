@@ -30,6 +30,14 @@ const ANALYTICS_CONFIG = {
     ga4MeasurementId: '' // e.g. 'G-XXXXXXXXXX'
 };
 
+// ---- HTML SANITIZATION ----
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // ---- INSTRUCTOR URL PARAMS ----
 // Each instructor gets a personalized link, e.g.:
 // seusite.com/quiz/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
@@ -1268,7 +1276,7 @@ function submitFinalApplication() {
             <div class="confirmation-icon">✅</div>
             <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
             <p class="confirmation-text">
-                Obrigado, <strong>${applicationData.name}</strong>! Um profissional do
+                Obrigado, <strong>${escapeHTML(applicationData.name)}</strong>! Um profissional do
                 <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
                 entrará em contato pelo seu WhatsApp se você for selecionado(a).
             </p>
@@ -1340,7 +1348,7 @@ function showResults() {
     // Build instructor text for session block
     const hasInstructor = !!instructor.instructorName;
     const profissionalText = hasInstructor
-        ? `com <strong>${instructor.instructorName}</strong>${instructor.profissao ? `, ${instructor.profissao}` : ''}${instructor.cidade ? ` em ${instructor.cidade}` : ''}`
+        ? `com <strong>${escapeHTML(instructor.instructorName)}</strong>${instructor.profissao ? `, ${escapeHTML(instructor.profissao)}` : ''}${instructor.cidade ? ` em ${escapeHTML(instructor.cidade)}` : ''}`
         : 'com um profissional certificado em Respiração Funcional';
 
     // Category analysis (for collapsible section)
@@ -1367,7 +1375,7 @@ function showResults() {
         ? `onclick="handleResultCta()"`
         : `onclick="showApplicationForm()"`;
     const ctaSubText = hasCtaUrl
-        ? `Ao clicar, você será direcionado(a) para escolher o melhor dia e horário para falar com ${instructor.instructorName || 'o profissional'}.`
+        ? `Ao clicar, você será direcionado(a) para escolher o melhor dia e horário para falar com ${escapeHTML(instructor.instructorName) || 'o profissional'}.`
         : 'Clique para se aplicar a uma sessão demonstrativa gratuita.';
 
     const container = document.getElementById('result-container');
@@ -1397,7 +1405,7 @@ function showResults() {
                 </div>
 
                 <h1 class="laudo-title">${RC.header.title}</h1>
-                <h2 class="laudo-subtitle">${userName || 'Você'}, o seu padrão atual é <strong>${faixa.label}</strong> (${healthScore}/100).</h2>
+                <h2 class="laudo-subtitle">${escapeHTML(userName) || 'Você'}, o seu padrão atual é <strong>${faixa.label}</strong> (${healthScore}/100).</h2>
                 <p class="laudo-apoio">${RC.header.apoio}</p>
             </div>
 
@@ -1604,7 +1612,14 @@ function handleResultCta() {
         total_score: totalScore
     });
     if (instructor.ctaUrl) {
-        window.open(instructor.ctaUrl, '_blank');
+        try {
+            const url = new URL(instructor.ctaUrl);
+            if (url.protocol === 'https:' || url.protocol === 'http:') {
+                window.open(url.href, '_blank', 'noopener,noreferrer');
+            }
+        } catch (e) {
+            // Invalid URL, ignore
+        }
     }
 }
 
