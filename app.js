@@ -229,64 +229,113 @@ async function saveApplication(leadData) {
     }
 }
 
-// ---- PARTICLES ----
+// ---- PREMIUM PARTICLE SYSTEM — AIR FLOW ----
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let particles = [];
-    let breathPhase = 0;
+    let w, h;
+    const mouse = { x: -1000, y: -1000 };
 
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
     }
     resize();
     window.addEventListener('resize', resize);
 
+    // Track mouse for interactivity
+    document.addEventListener('mousemove', function(e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
     function createParticle() {
+        const life = Math.random() * 200 + 100;
         return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 1,
-            baseSize: Math.random() * 3 + 1,
+            x: Math.random() * w,
+            y: Math.random() * h,
+            size: Math.random() * 2.5 + 0.5,
             speedX: (Math.random() - 0.5) * 0.3,
-            speedY: (Math.random() - 0.5) * 0.3,
-            opacity: Math.random() * 0.5 + 0.1,
-            phase: Math.random() * Math.PI * 2
+            speedY: -Math.random() * 0.4 - 0.1,
+            opacity: Math.random() * 0.3 + 0.05,
+            life: life,
+            maxLife: life
         };
     }
 
-    for (let i = 0; i < 60; i++) {
+    const count = Math.min(Math.floor(w * h / 8000), 150);
+    for (let i = 0; i < count; i++) {
         particles.push(createParticle());
+    }
+
+    // Draw connections between nearby particles
+    function drawConnections() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 100) {
+                    const alpha = (1 - dist / 100) * 0.06;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(45, 90, 61, ' + alpha + ')';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
     }
 
     function animate() {
         if (!particlesActive) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        breathPhase += 0.008;
+        ctx.clearRect(0, 0, w, h);
 
-        particles.forEach(p => {
-            // Breathing effect on size
-            const breathEffect = Math.sin(breathPhase + p.phase) * 0.5 + 0.5;
-            p.size = p.baseSize * (0.8 + breathEffect * 0.6);
+        particles.forEach(function(p) {
+            // Mouse repulsion
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+                const force = (120 - dist) / 120;
+                p.speedX += (dx / dist) * force * 0.15;
+                p.speedY += (dy / dist) * force * 0.15;
+            }
 
-            p.x += p.speedX;
+            // Gentle sine wave drift
+            p.x += p.speedX + Math.sin(Date.now() * 0.001 + p.y * 0.01) * 0.15;
             p.y += p.speedY;
 
-            // Wrap around
-            if (p.x < 0) p.x = canvas.width;
-            if (p.x > canvas.width) p.x = 0;
-            if (p.y < 0) p.y = canvas.height;
-            if (p.y > canvas.height) p.y = 0;
+            // Damping
+            p.speedX *= 0.99;
+            p.speedY *= 0.99;
 
-            const currentOpacity = p.opacity * (0.5 + breathEffect * 0.5);
+            p.life--;
+            if (p.life <= 0 || p.y < -10 || p.x < -10 || p.x > w + 10) {
+                // Reset particle at bottom
+                p.x = Math.random() * w;
+                p.y = h + 10;
+                p.size = Math.random() * 2.5 + 0.5;
+                p.speedX = (Math.random() - 0.5) * 0.3;
+                p.speedY = -Math.random() * 0.4 - 0.1;
+                p.opacity = Math.random() * 0.3 + 0.05;
+                p.life = Math.random() * 200 + 100;
+                p.maxLife = p.life;
+            }
+
+            // Fade in/out based on life
+            const fadeRatio = p.life / p.maxLife;
+            const alpha = p.opacity * (fadeRatio < 0.3 ? fadeRatio / 0.3 : fadeRatio > 0.7 ? (1 - fadeRatio) / 0.3 : 1);
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(45, 90, 61, ${currentOpacity})`;
+            ctx.fillStyle = 'rgba(45, 90, 61, ' + alpha + ')';
             ctx.fill();
         });
 
+        drawConnections();
         requestAnimationFrame(animate);
     }
     animate();
