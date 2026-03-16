@@ -30,18 +30,21 @@ export default async function DashboardPage() {
 
   // Fetch instructor slug for personalized link
   let instructorSlug: string | null = null
+  let isInstructor = false
   if (authUser) {
     const { data: userData } = await supabase
       .from('users')
       .select('slug, role')
       .eq('id', authUser.id)
       .single()
-    if (userData?.role === 'instructor' && userData.slug) {
-      instructorSlug = userData.slug
+    if (userData?.role === 'instructor') {
+      isInstructor = true
+      instructorSlug = userData.slug || null
     }
   }
 
-  const quizBaseUrl = process.env.NEXT_PUBLIC_QUIZ_URL || (process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.replace('/admin', '') : '')
+  const quizBaseUrl = process.env.NEXT_PUBLIC_QUIZ_URL
+    || (process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/admin\/?$/, '') : '')
 
   const profileDistribution: Record<QuizProfile, number> = {
     funcional: 0,
@@ -74,8 +77,16 @@ export default async function DashboardPage() {
         <p className="text-gray-500 mt-1">Visão geral das respostas do quiz respiratório</p>
       </div>
 
-      {instructorSlug && quizBaseUrl && (
-        <PersonalizedLink slug={instructorSlug} quizBaseUrl={quizBaseUrl} />
+      {isInstructor && (
+        instructorSlug && quizBaseUrl ? (
+          <PersonalizedLink slug={instructorSlug} quizBaseUrl={quizBaseUrl} />
+        ) : !instructorSlug ? (
+          <Card className="mb-6">
+            <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+              Seu link personalizado ainda não está disponível. Peça ao administrador para definir seu slug de perfil.
+            </p>
+          </Card>
+        ) : null
       )}
 
       <StatsCards
