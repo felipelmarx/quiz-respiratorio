@@ -32,7 +32,7 @@ export default function SettingsPage() {
         setWhatsapp(data.whatsapp || '')
         setSlug(data.slug || '')
         if (data.slug) {
-          setQuizLink(`${window.location.origin}/quiz?instrutor=${data.slug}`)
+          setQuizLink(`${window.location.origin}/quiz?ref=${data.slug}`)
         }
       }
       setLoading(false)

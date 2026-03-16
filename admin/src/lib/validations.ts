@@ -45,6 +45,16 @@ export const instructorCreateSchema = z.object({
   nome_clinica: z.string().max(200).optional(),
 })
 
+export const signupSchema = z.object({
+  token: z.string().min(1, 'Token obrigatório'),
+  name: z.string().min(2, 'Nome obrigatório').max(100).trim(),
+  email: z.string().email('Email inválido').max(255).trim().toLowerCase(),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  whatsapp: z.string().max(20).optional(),
+  profissao: z.string().max(100).optional(),
+  cidade: z.string().max(100).optional(),
+})
+
 export const instructorUpdateSchema = z.object({
   name: z.string().min(2).max(100).trim().optional(),
   whatsapp: z.string().max(20).optional(),
@@ -53,6 +63,7 @@ export const instructorUpdateSchema = z.object({
   profissao: z.string().max(100).optional(),
   cidade: z.string().max(100).optional(),
   nome_clinica: z.string().max(200).optional(),
+  license_expires_at: z.string().datetime().nullable().optional(),
 })
 
 export const permissionsSchema = z.object({

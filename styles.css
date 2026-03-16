@@ -88,7 +88,7 @@ body {
 }
 
 /* ============================================
-   WELCOME SCREEN - Mobile First
+   WELCOME SCREEN - Premium Verde | Mobile First
    ============================================ */
 
 #welcome-screen {
@@ -100,11 +100,44 @@ body {
 
 .welcome-wrapper {
     text-align: center;
-    max-width: 400px;
+    max-width: 440px;
     width: 100%;
-    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     z-index: 1;
+}
+
+/* Breathing Lung */
+.lung-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 32px;
+}
+
+.lung-glow {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(45, 90, 61, 0.3) 0%, transparent 70%);
+    animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.lung-svg {
+    position: relative;
+    z-index: 1;
+    width: 120px;
+    height: 120px;
+    animation: lungBreathe 4s ease-in-out infinite;
+}
+
+@keyframes lungBreathe {
+    0%, 100% { transform: scale(0.92); opacity: 0.85; }
+    50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { transform: scale(0.8); opacity: 0.3; }
+    50% { transform: scale(1.2); opacity: 0.6; }
 }
 
 /* Logo */
@@ -112,60 +145,65 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin: 0 auto 28px;
+    gap: 8px;
+    margin: 0 auto 10px;
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.logo-icon {
-    flex-shrink: 0;
+.logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
 }
 
 .logo-text {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -0.01em;
-}
-
-.welcome-por {
-    font-size: 0.52em;
-    font-weight: 300;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--text-dim);
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
 }
 
 .welcome-title {
-    font-size: 26px;
+    font-size: clamp(26px, 6vw, 48px);
     font-weight: 800;
-    line-height: 1.2;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
     margin-bottom: 16px;
-    letter-spacing: -0.02em;
     color: var(--text);
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .gradient-text {
-    color: var(--primary);
-    -webkit-text-fill-color: var(--primary);
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .welcome-subtitle {
-    font-size: 15px;
-    color: var(--text-secondary);
+    font-size: clamp(15px, 3.5vw, 18px);
+    font-weight: 400;
     line-height: 1.6;
-    margin-bottom: 28px;
+    color: var(--text-secondary);
+    max-width: 440px;
+    margin: 0 auto 32px;
     padding: 0 8px;
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .welcome-badges {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 32px;
+    gap: 16px;
+    margin-bottom: 36px;
     flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .badge {
@@ -173,12 +211,12 @@ body {
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: rgba(45, 90, 61, 0.06);
+    border: 1px solid rgba(45, 90, 61, 0.1);
     border-radius: 100px;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text-secondary);
-    box-shadow: var(--shadow);
 }
 
 .badge-icon {
@@ -186,9 +224,11 @@ body {
 }
 
 .welcome-trust {
-    margin-top: 16px;
-    font-size: 12px;
+    margin-top: 20px;
+    font-size: 13px;
     color: var(--text-dim);
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ============================================
@@ -196,29 +236,31 @@ body {
    ============================================ */
 
 .btn-primary {
-    background: var(--gradient);
+    background: var(--primary);
     color: white;
     border: none;
-    padding: 18px 36px;
+    padding: 16px 36px;
     font-size: 16px;
-    font-weight: 700;
-    border-radius: 100px;
+    font-weight: 600;
+    border-radius: 14px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     font-family: inherit;
-    box-shadow: 0 4px 20px rgba(45, 90, 61, 0.25);
+    box-shadow: 0 4px 20px rgba(45, 90, 61, 0.3), 0 1px 3px rgba(0,0,0,0.1);
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     position: relative;
     overflow: hidden;
+    opacity: 0;
+    animation: fadeInUp 0.8s 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .btn-primary:active {
-    transform: scale(0.97);
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-glow::before {
@@ -2124,15 +2166,14 @@ details[open] .technical-summary::after {
    ============================================ */
 
 @media (min-width: 480px) {
-    .welcome-title { font-size: 32px; }
     .question-text { font-size: 22px; }
     .exercise-title { font-size: 24px; }
     .tolerance-title { font-size: 22px; }
 }
 
 @media (min-width: 768px) {
-    .welcome-title { font-size: 38px; }
-    .welcome-subtitle { font-size: 17px; }
+    .lung-container { width: 140px; height: 140px; }
+    .lung-svg { width: 140px; height: 140px; }
 
     .question-wrapper {
         padding: 100px 40px 60px;
@@ -2158,8 +2199,9 @@ details[open] .technical-summary::after {
     }
 
     .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(45, 90, 61, 0.3);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 32px rgba(45, 90, 61, 0.35), 0 2px 8px rgba(0,0,0,0.1);
+        background: var(--secondary);
     }
 
     .btn-primary:hover .btn-arrow {

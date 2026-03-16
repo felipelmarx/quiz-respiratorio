@@ -38,26 +38,77 @@ function escapeHTML(str) {
     return div.innerHTML;
 }
 
-// ---- INSTRUCTOR URL PARAMS ----
-// Each instructor gets a personalized link, e.g.:
-// seusite.com/quiz/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
-// seusite.com/quiz/?instrutor=Dra.Ana&cta_url=https://calendly.com/dra-ana&cta_text=Marcar+Avaliação
+// ---- INSTRUCTOR LINK SYSTEM ----
+// Personalized link via slug: seusite.com/?ref=dr-felipe
+// Legacy URL params still supported as fallback:
+//   seusite.com/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
 const INSTRUCTOR_DEFAULTS = {
-    ctaUrl: '',                      // Default CTA URL (empty = no redirect)
-    ctaText: 'Quero Saber Mais',     // Default button text
-    instructorName: '',              // No instructor by default
-    profissao: '',                   // e.g. 'psicólogo(a)', 'terapeuta'
-    cidade: '',                      // e.g. 'São Paulo'
+    ctaUrl: '',
+    ctaText: 'Quero Saber Mais',
+    instructorName: '',
+    profissao: '',
+    cidade: '',
 };
+
+// Resolved instructor data (populated async from DB when ?ref= is present)
+let resolvedInstructor = null; // { id, name, profissao, cidade, nome_clinica, whatsapp }
+
+async function resolveInstructorSlug() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('ref');
+    if (!slug || !SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) return;
+
+    try {
+        const response = await fetch(
+            `${SUPABASE_CONFIG.url}/rest/v1/rpc/get_instructor_by_slug`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                },
+                body: JSON.stringify({ p_slug: slug }),
+            }
+        );
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.id) {
+                resolvedInstructor = data;
+                console.log('[Instructor] Resolved:', data.name);
+            }
+        }
+    } catch (error) {
+        console.error('[Instructor] Error resolving slug:', error);
+    }
+}
 
 function getInstructorConfig() {
     const params = new URLSearchParams(window.location.search);
+
+    // Slug-resolved instructor takes priority
+    if (resolvedInstructor) {
+        const whatsapp = resolvedInstructor.whatsapp;
+        const ctaUrl = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : '';
+        return {
+            ctaUrl: params.get('cta_url') || ctaUrl,
+            ctaText: params.get('cta_text') || (ctaUrl ? 'Falar pelo WhatsApp' : INSTRUCTOR_DEFAULTS.ctaText),
+            instructorName: resolvedInstructor.name,
+            profissao: resolvedInstructor.profissao || '',
+            cidade: resolvedInstructor.cidade || '',
+            instructorId: resolvedInstructor.id,
+        };
+    }
+
+    // Legacy URL params fallback
     return {
         ctaUrl: params.get('cta_url') || INSTRUCTOR_DEFAULTS.ctaUrl,
         ctaText: params.get('cta_text') || INSTRUCTOR_DEFAULTS.ctaText,
         instructorName: params.get('instrutor') || INSTRUCTOR_DEFAULTS.instructorName,
         profissao: params.get('profissao') || INSTRUCTOR_DEFAULTS.profissao,
         cidade: params.get('cidade') || INSTRUCTOR_DEFAULTS.cidade,
+        instructorId: null,
     };
 }
 
@@ -139,11 +190,13 @@ async function saveAnonymousResponse() {
 
     const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
 
+    const instructor = getInstructorConfig();
     const responseData = {
         answers: answers,
         scores: scores,
         total_score: totalScore,
-        profile: profileKey
+        profile: profileKey,
+        instructor_id: instructor.instructorId || null,
     };
 
     try {
@@ -177,8 +230,15 @@ async function saveApplication(leadData) {
         return;
     }
 
+    // Enrich lead with instructor_id from resolved slug
+    const instructor = getInstructorConfig();
+    const enrichedLead = {
+        ...leadData,
+        instructor_id: instructor.instructorId || null,
+    };
+
     try {
-        // 1. Save lead
+        // 1. Save lead (with instructor_id)
         const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
             method: 'POST',
             headers: {
@@ -187,7 +247,7 @@ async function saveApplication(leadData) {
                 'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
                 'Prefer': 'return=representation'
             },
-            body: JSON.stringify(leadData)
+            body: JSON.stringify(enrichedLead)
         });
 
         if (!leadResponse.ok) {
@@ -213,7 +273,6 @@ async function saveApplication(leadData) {
                     },
                     body: JSON.stringify({
                         lead_id: leadId,
-                        instructor_id: leadData.instructor_id || null
                     })
                 }
             );
@@ -229,64 +288,113 @@ async function saveApplication(leadData) {
     }
 }
 
-// ---- PARTICLES ----
+// ---- PREMIUM PARTICLE SYSTEM — AIR FLOW ----
 function initParticles() {
     const canvas = document.getElementById('particles-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let particles = [];
-    let breathPhase = 0;
+    let w, h;
+    const mouse = { x: -1000, y: -1000 };
 
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
     }
     resize();
     window.addEventListener('resize', resize);
 
+    // Track mouse for interactivity
+    document.addEventListener('mousemove', function(e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    });
+
     function createParticle() {
+        const life = Math.random() * 200 + 100;
         return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 1,
-            baseSize: Math.random() * 3 + 1,
+            x: Math.random() * w,
+            y: Math.random() * h,
+            size: Math.random() * 2.5 + 0.5,
             speedX: (Math.random() - 0.5) * 0.3,
-            speedY: (Math.random() - 0.5) * 0.3,
-            opacity: Math.random() * 0.5 + 0.1,
-            phase: Math.random() * Math.PI * 2
+            speedY: -Math.random() * 0.4 - 0.1,
+            opacity: Math.random() * 0.3 + 0.05,
+            life: life,
+            maxLife: life
         };
     }
 
-    for (let i = 0; i < 60; i++) {
+    const count = Math.min(Math.floor(w * h / 8000), 150);
+    for (let i = 0; i < count; i++) {
         particles.push(createParticle());
+    }
+
+    // Draw connections between nearby particles
+    function drawConnections() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 100) {
+                    const alpha = (1 - dist / 100) * 0.06;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = 'rgba(45, 90, 61, ' + alpha + ')';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
     }
 
     function animate() {
         if (!particlesActive) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        breathPhase += 0.008;
+        ctx.clearRect(0, 0, w, h);
 
-        particles.forEach(p => {
-            // Breathing effect on size
-            const breathEffect = Math.sin(breathPhase + p.phase) * 0.5 + 0.5;
-            p.size = p.baseSize * (0.8 + breathEffect * 0.6);
+        particles.forEach(function(p) {
+            // Mouse repulsion
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120) {
+                const force = (120 - dist) / 120;
+                p.speedX += (dx / dist) * force * 0.15;
+                p.speedY += (dy / dist) * force * 0.15;
+            }
 
-            p.x += p.speedX;
+            // Gentle sine wave drift
+            p.x += p.speedX + Math.sin(Date.now() * 0.001 + p.y * 0.01) * 0.15;
             p.y += p.speedY;
 
-            // Wrap around
-            if (p.x < 0) p.x = canvas.width;
-            if (p.x > canvas.width) p.x = 0;
-            if (p.y < 0) p.y = canvas.height;
-            if (p.y > canvas.height) p.y = 0;
+            // Damping
+            p.speedX *= 0.99;
+            p.speedY *= 0.99;
 
-            const currentOpacity = p.opacity * (0.5 + breathEffect * 0.5);
+            p.life--;
+            if (p.life <= 0 || p.y < -10 || p.x < -10 || p.x > w + 10) {
+                // Reset particle at bottom
+                p.x = Math.random() * w;
+                p.y = h + 10;
+                p.size = Math.random() * 2.5 + 0.5;
+                p.speedX = (Math.random() - 0.5) * 0.3;
+                p.speedY = -Math.random() * 0.4 - 0.1;
+                p.opacity = Math.random() * 0.3 + 0.05;
+                p.life = Math.random() * 200 + 100;
+                p.maxLife = p.life;
+            }
+
+            // Fade in/out based on life
+            const fadeRatio = p.life / p.maxLife;
+            const alpha = p.opacity * (fadeRatio < 0.3 ? fadeRatio / 0.3 : fadeRatio > 0.7 ? (1 - fadeRatio) / 0.3 : 1);
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(45, 90, 61, ${currentOpacity})`;
+            ctx.fillStyle = 'rgba(45, 90, 61, ' + alpha + ')';
             ctx.fill();
         });
 
+        drawConnections();
         requestAnimationFrame(animate);
     }
     animate();
@@ -1238,11 +1346,13 @@ function submitFinalApplication() {
     applicationData.available_periods = selectedPeriods;
     applicationData.committed = committed;
 
+    const instructorConfig = getInstructorConfig();
     const leadData = {
         name: applicationData.name,
         email: applicationData.email,
         phone: applicationData.phone || null,
         referral: applicationData.referral || null,
+        instructor_id: instructorConfig.instructorId || null,
         extra_data: {
             problems: applicationData.problems,
             priority: applicationData.priority,
@@ -1720,6 +1830,7 @@ function copyShareLink() {
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
+    resolveInstructorSlug();
 
     // Initialize analytics if configured
     if (ANALYTICS_CONFIG.ga4MeasurementId) {

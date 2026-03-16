@@ -58,6 +58,7 @@ export async function PATCH(
     if (fields.profissao !== undefined) updateData.profissao = fields.profissao
     if (fields.cidade !== undefined) updateData.cidade = fields.cidade
     if (fields.nome_clinica !== undefined) updateData.nome_clinica = fields.nome_clinica
+    if (fields.license_expires_at !== undefined) updateData.license_expires_at = fields.license_expires_at
 
     const { error } = await supabase
       .from('users')

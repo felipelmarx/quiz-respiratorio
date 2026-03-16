@@ -30,25 +30,61 @@
              ============================== -->
         <div id="welcome-screen" class="screen active">
             <div class="welcome-wrapper">
-                <div class="welcome-logo">
-                    <svg class="logo-icon" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 6C18 6 12 10 10 16C8 22 10 28 14 32C16 34 20 38 24 42C28 38 32 34 34 32C38 28 40 22 38 16C36 10 30 6 24 6Z" fill="url(#leafGrad)" opacity="0.15"/>
-                        <path d="M17 20C17 16 19 13 22 12C20 15 19 18 20 22C21 26 24 28 24 28C24 28 21 26 19 23C18 21.5 17 20 17 20Z" fill="#2D5A3D" opacity="0.6"/>
-                        <path d="M31 20C31 16 29 13 26 12C28 15 29 18 28 22C27 26 24 28 24 28C24 28 27 26 29 23C30 21.5 31 20 31 20Z" fill="#2D5A3D" opacity="0.6"/>
-                        <path d="M24 14C24 14 22 18 22 24C22 28 24 32 24 32C24 32 26 28 26 24C26 18 24 14 24 14Z" fill="#4A7C59" opacity="0.5"/>
+                <!-- Breathing Lung SVG -->
+                <div class="lung-container">
+                    <div class="lung-glow"></div>
+                    <svg class="lung-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Left lung -->
+                        <path d="M38 35C38 35 28 42 24 55C20 68 22 82 30 88C36 92 42 90 44 84C46 78 48 65 48 55C48 45 44 38 38 35Z" fill="url(#lgL)" opacity="0.2" stroke="#2D5A3D" stroke-width="1.5" stroke-opacity="0.3"/>
+                        <!-- Right lung -->
+                        <path d="M82 35C82 35 92 42 96 55C100 68 98 82 90 88C84 92 78 90 76 84C74 78 72 65 72 55C72 45 76 38 82 35Z" fill="url(#lgR)" opacity="0.2" stroke="#2D5A3D" stroke-width="1.5" stroke-opacity="0.3"/>
+                        <!-- Trachea -->
+                        <path d="M60 18L60 40" stroke="#2D5A3D" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+                        <!-- Bronchi -->
+                        <path d="M60 40C60 40 48 48 42 38" stroke="#2D5A3D" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+                        <path d="M60 40C60 40 72 48 78 38" stroke="#2D5A3D" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+                        <!-- Bronchioles left -->
+                        <path d="M42 38C42 38 34 50 30 60" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                        <path d="M42 38C42 38 38 52 36 65" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                        <!-- Bronchioles right -->
+                        <path d="M78 38C78 38 86 50 90 60" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                        <path d="M78 38C78 38 82 52 84 65" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                        <!-- Air flow dots -->
+                        <circle cx="60" cy="24" r="2" fill="#6ba378" opacity="0.6">
+                            <animate attributeName="cy" values="18;32;18" dur="4s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.6;0.2;0.6" dur="4s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="56" cy="30" r="1.5" fill="#6ba378" opacity="0.4">
+                            <animate attributeName="cy" values="30;50;30" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                            <animate attributeName="cx" values="56;40;56" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="64" cy="30" r="1.5" fill="#6ba378" opacity="0.4">
+                            <animate attributeName="cy" values="30;50;30" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                            <animate attributeName="cx" values="64;80;64" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.4;0.1;0.4" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                        </circle>
                         <defs>
-                            <linearGradient id="leafGrad" x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
+                            <linearGradient id="lgL" x1="24" y1="35" x2="48" y2="88">
+                                <stop stop-color="#2D5A3D"/>
+                                <stop offset="1" stop-color="#6ba378"/>
+                            </linearGradient>
+                            <linearGradient id="lgR" x1="96" y1="35" x2="72" y2="88">
                                 <stop stop-color="#2D5A3D"/>
                                 <stop offset="1" stop-color="#6ba378"/>
                             </linearGradient>
                         </defs>
                     </svg>
+                </div>
+
+                <div class="welcome-logo">
+                    <div class="logo-dot"></div>
                     <span class="logo-text">iBreathwork</span>
                 </div>
 
                 <h1 class="welcome-title">
-                    Teste de Ansiedade<br>
-                    <span class="welcome-por">por</span> <span class="gradient-text">Disfunção Respiratória</span>
+                    Teste de Ansiedade por<br>
+                    <span class="gradient-text">Disfunção Respiratória</span>
                 </h1>
 
                 <p class="welcome-subtitle">
@@ -56,18 +92,9 @@
                 </p>
 
                 <div class="welcome-badges">
-                    <div class="badge">
-                        <span class="badge-icon">⏱</span>
-                        <span>5 min</span>
-                    </div>
-                    <div class="badge">
-                        <span class="badge-icon">☑</span>
-                        <span>Gratuito</span>
-                    </div>
-                    <div class="badge">
-                        <span class="badge-icon">🔬</span>
-                        <span>Base Científica</span>
-                    </div>
+                    <div class="badge"><span class="badge-icon">⏱</span> 5 min</div>
+                    <div class="badge"><span class="badge-icon">✓</span> Gratuito</div>
+                    <div class="badge"><span class="badge-icon">🔬</span> Científico</div>
                 </div>
 
                 <button id="start-btn" class="btn-primary btn-glow" onclick="startQuiz()">
@@ -75,7 +102,7 @@
                     <span class="btn-arrow">&rarr;</span>
                 </button>
 
-                <p class="welcome-trust">Gratuito e confidencial. Mais de 2.000 pessoas já fizeram.</p>
+                <p class="welcome-trust">Gratuito e confidencial · Mais de 2.000 pessoas já fizeram</p>
             </div>
         </div>
 

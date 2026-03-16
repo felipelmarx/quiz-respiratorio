@@ -42,6 +42,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/quiz') ||
     pathname.startsWith('/api/quiz/submit') ||
     pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {
@@ -59,7 +61,7 @@ export async function middleware(request: NextRequest) {
   // Get user role and permissions from DB
   const { data: userData } = await supabase
     .from('users')
-    .select('role, is_active, permissions')
+    .select('role, is_active, permissions, license_expires_at')
     .eq('id', user.id)
     .single()
 
@@ -69,6 +71,21 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('error', 'inactive')
+    return NextResponse.redirect(url)
+  }
+
+  // License expired → auto-deactivate and block login
+  if (
+    userData &&
+    userData.role === 'instructor' &&
+    userData.license_expires_at &&
+    new Date(userData.license_expires_at) < new Date()
+  ) {
+    await supabase.from('users').update({ is_active: false }).eq('id', user.id)
+    await supabase.auth.signOut()
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('error', 'license_expired')
     return NextResponse.redirect(url)
   }
 

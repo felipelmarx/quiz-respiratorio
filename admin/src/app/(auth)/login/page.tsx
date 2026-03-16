@@ -26,6 +26,7 @@ function LoginForm() {
   const errorMessages: Record<string, string> = {
     inactive: 'Sua conta está desativada. Contate o administrador.',
     no_permissions: 'Sua conta não possui permissões. Contate o administrador.',
+    license_expired: 'Sua licença expirou. Entre em contato com o administrador para renovar.',
   }
 
   const [email, setEmail] = useState('')
