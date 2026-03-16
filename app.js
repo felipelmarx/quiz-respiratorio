@@ -230,8 +230,15 @@ async function saveApplication(leadData) {
         return;
     }
 
+    // Enrich lead with instructor_id from resolved slug
+    const instructor = getInstructorConfig();
+    const enrichedLead = {
+        ...leadData,
+        instructor_id: instructor.instructorId || null,
+    };
+
     try {
-        // 1. Save lead
+        // 1. Save lead (with instructor_id)
         const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
             method: 'POST',
             headers: {
@@ -240,7 +247,7 @@ async function saveApplication(leadData) {
                 'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
                 'Prefer': 'return=representation'
             },
-            body: JSON.stringify(leadData)
+            body: JSON.stringify(enrichedLead)
         });
 
         if (!leadResponse.ok) {

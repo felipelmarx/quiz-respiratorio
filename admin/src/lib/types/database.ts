@@ -50,6 +50,7 @@ export interface Database {
           profissao: string | null
           cidade: string | null
           nome_clinica: string | null
+          license_expires_at: string | null
           created_at: string
           updated_at: string
         }
@@ -66,6 +67,7 @@ export interface Database {
           profissao?: string | null
           cidade?: string | null
           nome_clinica?: string | null
+          license_expires_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -82,6 +84,7 @@ export interface Database {
           profissao?: string | null
           cidade?: string | null
           nome_clinica?: string | null
+          license_expires_at?: string | null
           updated_at?: string
         }
       }

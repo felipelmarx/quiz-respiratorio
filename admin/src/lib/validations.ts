@@ -63,6 +63,7 @@ export const instructorUpdateSchema = z.object({
   profissao: z.string().max(100).optional(),
   cidade: z.string().max(100).optional(),
   nome_clinica: z.string().max(200).optional(),
+  license_expires_at: z.string().datetime().nullable().optional(),
 })
 
 export const permissionsSchema = z.object({

@@ -44,6 +44,12 @@ export function formatPhone(phone: string): string {
   return phone
 }
 
+export function getWhatsAppUrl(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '')
+  const number = cleaned.length <= 11 ? `55${cleaned}` : cleaned
+  return `https://wa.me/${number}`
+}
+
 export function generateCSV(
   headers: string[],
   rows: string[][]

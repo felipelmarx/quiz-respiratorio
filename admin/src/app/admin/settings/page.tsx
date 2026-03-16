@@ -1,6 +1,28 @@
+'use client'
+
+import { useState } from 'react'
 import { Card, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export default function AdminSettingsPage() {
+  const [testResult, setTestResult] = useState<{ success?: boolean; status?: number; error?: string } | null>(null)
+  const [testing, setTesting] = useState(false)
+
+  async function testConnection() {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch('/api/admin/integration', { method: 'POST' })
+      const json = await res.json()
+      setTestResult(json)
+    } catch {
+      setTestResult({ success: false, error: 'Erro de conexão' })
+    } finally {
+      setTesting(false)
+    }
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -9,6 +31,50 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Integration Card */}
+        <Card className="lg:col-span-2">
+          <CardTitle>Integração com Plataforma de Membros</CardTitle>
+          <p className="mt-2 text-sm text-gray-500">
+            Conecte sua plataforma de membros para sincronizar a base de alunos automaticamente.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4 text-sm">
+              <p className="text-gray-600 mb-2">
+                Configure as variáveis de ambiente no Vercel (ou <code className="bg-gray-200 px-1 rounded">.env.local</code>):
+              </p>
+              <div className="font-mono text-xs space-y-1 text-gray-500">
+                <p><code>MEMBERS_API_URL</code> — URL base da API de membros</p>
+                <p><code>MEMBERS_API_KEY</code> — Chave secreta da API</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button onClick={testConnection} loading={testing} variant="outline">
+                Testar Conexão
+              </Button>
+
+              {testResult && (
+                <div className="flex items-center gap-2">
+                  {testResult.success ? (
+                    <Badge variant="success">
+                      Conectado (HTTP {testResult.status})
+                    </Badge>
+                  ) : (
+                    <Badge variant="danger">
+                      {testResult.error || `Erro HTTP ${testResult.status}`}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="text-xs text-gray-400">
+              A sincronização completa de alunos será implementada em uma próxima versão.
+            </div>
+          </div>
+        </Card>
+
         <Card>
           <CardTitle>Informações da Plataforma</CardTitle>
           <div className="mt-4 space-y-3 text-sm">
