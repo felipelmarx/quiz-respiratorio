@@ -140,6 +140,28 @@ export interface Database {
           profile?: string
         }
       }
+      invite_tokens: {
+        Row: {
+          id: string
+          token: string
+          is_active: boolean
+          created_by: string
+          created_at: string
+          deactivated_at: string | null
+        }
+        Insert: {
+          id?: string
+          token: string
+          is_active?: boolean
+          created_by: string
+          created_at?: string
+          deactivated_at?: string | null
+        }
+        Update: {
+          is_active?: boolean
+          deactivated_at?: string | null
+        }
+      }
       audit_logs: {
         Row: {
           id: string
@@ -159,6 +181,15 @@ export interface Database {
       }
     }
   }
+}
+
+export interface InviteToken {
+  id: string
+  token: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+  deactivated_at: string | null
 }
 
 export interface QuizScores {

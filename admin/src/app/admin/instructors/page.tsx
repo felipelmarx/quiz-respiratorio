@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,12 @@ export default function InstructorsPage() {
   const [creating, setCreating] = useState(false)
   const [editingPerms, setEditingPerms] = useState<string | null>(null)
 
+  // Invite link
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const copiedTimeout = useRef<ReturnType<typeof setTimeout>>()
+
   // Create form
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -58,7 +64,20 @@ export default function InstructorsPage() {
     setLoading(false)
   }, [])
 
+  const fetchInviteToken = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/invite')
+      if (res.ok) {
+        const json = await res.json()
+        setInviteToken(json.token)
+      }
+    } catch {
+      // Silently fail — invite section will show "generate" button
+    }
+  }, [])
+
   useEffect(() => { fetchInstructors() }, [fetchInstructors])
+  useEffect(() => { fetchInviteToken() }, [fetchInviteToken])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -99,6 +118,30 @@ export default function InstructorsPage() {
     }
   }
 
+  async function generateInviteLink() {
+    setInviteLoading(true)
+    try {
+      const res = await fetch('/api/admin/invite', { method: 'POST' })
+      if (res.ok) {
+        const json = await res.json()
+        setInviteToken(json.token)
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  function copyInviteLink() {
+    if (!inviteToken) return
+    const url = `${window.location.origin}/signup?token=${inviteToken}`
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    if (copiedTimeout.current) clearTimeout(copiedTimeout.current)
+    copiedTimeout.current = setTimeout(() => setCopied(false), 2000)
+  }
+
   async function toggleActive(id: string, currentActive: boolean) {
     const supabase = createClient()
     await supabase.from('users').update({ is_active: !currentActive }).eq('id', id)
@@ -135,6 +178,44 @@ export default function InstructorsPage() {
           {showCreate ? 'Cancelar' : '+ Novo Instrutor'}
         </Button>
       </div>
+
+      {/* Invite Link */}
+      <Card className="mb-6">
+        <CardTitle>Link de Convite</CardTitle>
+        <p className="text-sm text-gray-500 mt-1 mb-4">
+          Compartilhe este link para instrutores se cadastrarem na plataforma.
+        </p>
+        {inviteToken ? (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/signup?token=${inviteToken}`}
+              className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 font-mono select-all"
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+            <Button variant="outline" onClick={copyInviteLink}>
+              {copied ? 'Copiado!' : 'Copiar'}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 mb-3">Nenhum link ativo. Gere um abaixo.</p>
+        )}
+        <div className="mt-3 flex items-center gap-3">
+          <Button
+            onClick={generateInviteLink}
+            loading={inviteLoading}
+            variant={inviteToken ? 'outline' : 'primary'}
+          >
+            {inviteToken ? 'Gerar Novo Link' : 'Gerar Link'}
+          </Button>
+          {inviteToken && (
+            <span className="text-xs text-gray-400">
+              Ao gerar um novo link, o anterior será desativado.
+            </span>
+          )}
+        </div>
+      </Card>
 
       {/* Create Form */}
       {showCreate && (
