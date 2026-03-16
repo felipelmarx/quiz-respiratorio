@@ -119,6 +119,12 @@ export default function InstructorsPage() {
   }
 
   async function generateInviteLink() {
+    if (inviteToken) {
+      const confirmed = window.confirm(
+        'Ao gerar um novo link, o link atual será desativado e não poderá mais ser usado para cadastro. Deseja continuar?'
+      )
+      if (!confirmed) return
+    }
     setInviteLoading(true)
     try {
       const res = await fetch('/api/admin/invite', { method: 'POST' })
