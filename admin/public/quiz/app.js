@@ -30,6 +30,14 @@ const ANALYTICS_CONFIG = {
     ga4MeasurementId: '' // e.g. 'G-XXXXXXXXXX'
 };
 
+// ---- HTML SANITIZATION ----
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // ---- INSTRUCTOR URL PARAMS ----
 // Each instructor gets a personalized link, e.g.:
 // seusite.com/quiz/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
@@ -38,6 +46,8 @@ const INSTRUCTOR_DEFAULTS = {
     ctaUrl: '',                      // Default CTA URL (empty = no redirect)
     ctaText: 'Quero Saber Mais',     // Default button text
     instructorName: '',              // No instructor by default
+    profissao: '',                   // e.g. 'psicólogo(a)', 'terapeuta'
+    cidade: '',                      // e.g. 'São Paulo'
 };
 
 function getInstructorConfig() {
@@ -46,7 +56,21 @@ function getInstructorConfig() {
         ctaUrl: params.get('cta_url') || INSTRUCTOR_DEFAULTS.ctaUrl,
         ctaText: params.get('cta_text') || INSTRUCTOR_DEFAULTS.ctaText,
         instructorName: params.get('instrutor') || INSTRUCTOR_DEFAULTS.instructorName,
+        profissao: params.get('profissao') || INSTRUCTOR_DEFAULTS.profissao,
+        cidade: params.get('cidade') || INSTRUCTOR_DEFAULTS.cidade,
     };
+}
+
+// ---- FAIXA HELPER ----
+function getProfileKey() {
+    if (totalScore <= 7) return 'functional';
+    if (totalScore <= 15) return 'moderate';
+    if (totalScore <= 23) return 'dysfunctional';
+    return 'severe';
+}
+
+function getFaixa() {
+    return FAIXA_MAP[getProfileKey()];
 }
 
 // ---- HAPTIC FEEDBACK ----
@@ -1252,7 +1276,7 @@ function submitFinalApplication() {
             <div class="confirmation-icon">✅</div>
             <h3 class="confirmation-title">Aplicação Enviada com Sucesso!</h3>
             <p class="confirmation-text">
-                Obrigado, <strong>${applicationData.name}</strong>! Um profissional do
+                Obrigado, <strong>${escapeHTML(applicationData.name)}</strong>! Um profissional do
                 <strong>Instituto Brasileiro de Neurociência e Respiração</strong>
                 entrará em contato pelo seu WhatsApp se você for selecionado(a).
             </p>
@@ -1285,247 +1309,237 @@ function getCategoryLevel(category) {
 }
 
 // ---- RESULTS ----
-async function showResults() {
+function getPersonalizedBenefit() {
+    const benefitMap = {
+        ansiedade: 'redução da ansiedade',
+        insonia: 'melhora do sono',
+        estresse: 'controle do estresse',
+        burnout: 'recuperação do burnout',
+        falta_foco: 'aumento do foco e concentração',
+        dores: 'alívio de dores crônicas',
+        sem_energia: 'restauração da energia',
+        impulsividade: 'regulação emocional',
+        aprendizado: 'melhora da capacidade cognitiva'
+    };
+
+    const userProblems = answers['main_problems'] || [];
+    const benefits = userProblems
+        .map(p => benefitMap[p])
+        .filter(Boolean);
+
+    if (benefits.length === 0) return 'melhora da sua saúde respiratória';
+    if (benefits.length === 1) return benefits[0];
+    if (benefits.length === 2) return `${benefits[0]} e ${benefits[1]}`;
+    return `${benefits.slice(0, -1).join(', ')} e ${benefits[benefits.length - 1]}`;
+}
+
+function showResults() {
     showScreen('result-screen');
 
     const profile = getProfile();
     const instructor = getInstructorConfig();
+    const faixa = getFaixa();
     const maxScore = 33;
     const riskPct = Math.min(100, Math.round((totalScore / maxScore) * 100));
     const healthScore = Math.max(0, 100 - riskPct);
+    const personalizedBenefit = getPersonalizedBenefit();
+    const RC = RESULT_CONTENT;
 
-    // Determine faixa
-    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
-    const faixa = FAIXA_LABELS[profileKey];
+    // Build instructor text for session block
+    const hasInstructor = !!instructor.instructorName;
+    const profissionalText = hasInstructor
+        ? `com <strong>${escapeHTML(instructor.instructorName)}</strong>${instructor.profissao ? `, ${escapeHTML(instructor.profissao)}` : ''}${instructor.cidade ? ` em ${escapeHTML(instructor.cidade)}` : ''}`
+        : 'com um profissional certificado em Respiração Funcional';
 
-    // Fetch instructor data from API if slug available
-    const params = new URLSearchParams(window.location.search);
-    const instructorSlug = params.get('instructor_slug') || params.get('slug') || '';
-    let profData = { name: instructor.instructorName || '', profissao: '', cidade: '', nome_clinica: '' };
+    // Category analysis (for collapsible section)
+    const categories = ['padrao', 'sintomas', 'consciencia', 'tolerancia'].map(cat => {
+        const level = getCategoryLevel(cat);
+        const config = CATEGORY_ANALYSIS[cat];
+        const levelConfig = config.levels[level];
+        return {
+            ...config,
+            level,
+            levelLabel: levelConfig.label,
+            levelColor: levelConfig.color,
+            score: scores[cat],
+            pct: Math.min(100, Math.round((scores[cat] / config.maxScore) * 100)),
+            insight: config.insights[level],
+            refs: config.references ? config.references[level] : []
+        };
+    });
 
-    if (instructorSlug) {
-        try {
-            const resp = await fetch(`/api/quiz/instructor?slug=${encodeURIComponent(instructorSlug)}`);
-            if (resp.ok) {
-                const data = await resp.json();
-                profData = { ...profData, ...data };
-                if (!profData.name && data.name) profData.name = data.name;
-            }
-        } catch (e) {
-            console.log('[Instructor] Fetch failed, using URL params:', e);
-        }
-    }
-
-    // Build professional strings
-    const hasProfessional = !!profData.name;
-    const profParts = [profData.name];
-    if (profData.profissao) profParts.push(profData.profissao);
-    const profLine = profParts.join(', ');
-    const profWithCity = profData.cidade ? `${profLine} em ${profData.cidade}` : profLine;
-
-    // Template helper
-    const tpl = (str) => str
-        .replace(/\{\{profissional_nome\}\}/g, profData.name || 'o profissional')
-        .replace(/\{\{profissao\}\}/g, profData.profissao || '')
-        .replace(/\{\{cidade\}\}/g, profData.cidade || '');
-
-    // Severity conditional text
-    const severityIntro = RESULT_CONTENT.diaADia.conditionals[faixa] || RESULT_CONTENT.diaADia.conditionals.moderada;
-
-    // Session intro
-    const sessionIntro = hasProfessional
-        ? `${RESULT_CONTENT.sessao.introTemplate} com <strong>${profWithCity}</strong>.`
-        : `${RESULT_CONTENT.sessao.introTemplate} ${RESULT_CONTENT.sessao.introGeneric}`;
-
-    // CTA sub text
-    const ctaSubText = hasProfessional
-        ? tpl(RESULT_CONTENT.cta.subTextTemplate)
-        : RESULT_CONTENT.cta.subTextGeneric;
-
-    // Footer
-    const footerText = hasProfessional
-        ? tpl(RESULT_CONTENT.footer.withProfessional)
-        : RESULT_CONTENT.footer.generic;
+    // CTA logic
+    const hasCtaUrl = !!instructor.ctaUrl;
+    const ctaButtonText = hasCtaUrl ? RC.cta.buttonText : RC.cta.buttonTextFallback;
+    const ctaAction = hasCtaUrl
+        ? `onclick="handleResultCta()"`
+        : `onclick="showApplicationForm()"`;
+    const ctaSubText = hasCtaUrl
+        ? `Ao clicar, você será direcionado(a) para escolher o melhor dia e horário para falar com ${escapeHTML(instructor.instructorName) || 'o profissional'}.`
+        : 'Clique para se aplicar a uma sessão demonstrativa gratuita.';
 
     const container = document.getElementById('result-container');
     container.innerHTML = `
-        <!-- BLOCO 1: Cabeçalho do Resultado -->
-        <section class="result-header disney-reveal" style="--profile-color: ${profile.color}; --profile-glow: ${profile.colorGlow}; --profile-gradient: ${profile.gradient}">
-            <h1 class="result-title shimmer-text">${RESULT_CONTENT.header.title}</h1>
+        <div class="result-laudo">
 
-            <div class="score-ring-container">
-                <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
-                    <svg viewBox="0 0 120 120">
-                        <circle class="ring-bg" cx="60" cy="60" r="52" />
-                        <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"
-                            stroke="${profile.color}"
-                            stroke-dasharray="326.73"
-                            stroke-dashoffset="326.73" />
-                    </svg>
-                    <div class="score-center">
-                        <span class="score-value" id="score-value">0</span>
-                        <span class="score-max">/100</span>
+            <!-- BLOCO 1: CABEÇALHO -->
+            <div class="result-block result-header-block" data-delay="0">
+                <div class="score-ring-container">
+                    <div class="score-ring" id="score-ring" style="--ring-color: ${profile.color}; --ring-glow: ${profile.colorGlow}">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="ring-bg" cx="60" cy="60" r="52" />
+                            <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"
+                                stroke="${profile.color}"
+                                stroke-dasharray="326.73"
+                                stroke-dashoffset="326.73" />
+                        </svg>
+                        <div class="score-center">
+                            <span class="score-value" id="score-value">0</span>
+                            <span class="score-max">/100</span>
+                        </div>
                     </div>
+                </div>
+
+                <div class="result-profile-badge" style="background: ${profile.gradient}">
+                    ${profile.emoji} ${profile.title}
+                </div>
+
+                <h1 class="laudo-title">${RC.header.title}</h1>
+                <h2 class="laudo-subtitle">${escapeHTML(userName) || 'Você'}, o seu padrão atual é <strong>${faixa.label}</strong> (${healthScore}/100).</h2>
+                <p class="laudo-apoio">${RC.header.apoio}</p>
+            </div>
+
+            <!-- BLOCO 2: INSIGHT RÁPIDO -->
+            <div class="result-block" data-delay="1">
+                <h3 class="laudo-h3">${RC.insightRapido.title}</h3>
+                <p class="laudo-text">${RC.insightRapido.text}</p>
+            </div>
+
+            <!-- BLOCO 3: DIA A DIA -->
+            <div class="result-block" data-delay="2">
+                <h3 class="laudo-h3">${RC.diaADia.title}</h3>
+                <p class="laudo-text severity-intro">${faixa.intro}</p>
+                <p class="laudo-text">${RC.diaADia.intro}</p>
+                <ul class="symptom-list">
+                    ${RC.diaADia.symptoms.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+                <p class="laudo-highlight">${RC.diaADia.closing}</p>
+            </div>
+
+            <!-- BLOCO 4: MECANISMO -->
+            <div class="result-block" data-delay="3">
+                <h3 class="laudo-h3">${RC.mecanismo.title}</h3>
+                <p class="laudo-text">${RC.mecanismo.intro}</p>
+                <div class="mechanism-steps">
+                    ${RC.mecanismo.steps.map(step => `
+                        <div class="mechanism-step">
+                            <div class="mechanism-step-num">${step.num}</div>
+                            <div class="mechanism-step-content">
+                                <strong>${step.title}</strong>
+                                <p>${step.text}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <p class="laudo-highlight">${RC.mecanismo.closing}</p>
+            </div>
+
+            <!-- BLOCO 5: PRÓXIMO PASSO -->
+            <div class="result-block" data-delay="4">
+                <h3 class="laudo-h3">${RC.proximoPasso.title}</h3>
+                <p class="laudo-text">${RC.proximoPasso.intro}</p>
+                <ul class="benefit-list">
+                    ${RC.proximoPasso.benefits.map(b => `<li>${b}</li>`).join('')}
+                </ul>
+            </div>
+
+            <!-- BLOCO 6: SESSÃO DEMONSTRATIVA -->
+            <div class="result-block session-card" data-delay="5">
+                <h3 class="laudo-h3">${RC.sessao.title}</h3>
+                <p class="laudo-text">Com base no seu resultado, você é um forte candidato a uma Sessão de Demonstração de Respiração Funcional ${profissionalText}.</p>
+                <p class="laudo-text">Na sessão online de aproximadamente 30 minutos, você vai:</p>
+                <ul class="benefit-list">
+                    ${RC.sessao.deliverables.map(d => `<li>${d}</li>`).join('')}
+                </ul>
+                <p class="laudo-disclaimer">${RC.sessao.disclaimer}</p>
+            </div>
+
+            <!-- BLOCO 7: URGÊNCIA SUAVE -->
+            <div class="result-block urgency-block" data-delay="6">
+                ${RC.urgencia.map(p => `<p class="urgency-text">${p}</p>`).join('')}
+            </div>
+
+            <!-- BLOCO 8: CTA -->
+            <div class="result-block cta-section" data-delay="7" id="application-section">
+                <button class="btn-cta-main" id="btn-show-application" ${ctaAction}>
+                    ${ctaButtonText}
+                    <span class="btn-arrow">&rarr;</span>
+                </button>
+                <p class="cta-sub-text">${ctaSubText}</p>
+
+                <div class="application-form-wrapper" id="application-form-wrapper" style="display:none;">
+                    <!-- Multi-step form rendered dynamically -->
                 </div>
             </div>
 
-            <h2 class="result-subtitle">${userName || 'Você'}, o seu padrão atual é <strong class="severity-tag severity-${faixa}">${faixa}</strong> <span class="score-inline">(${healthScore}/100)</span>.</h2>
-            <p class="result-support-line">${RESULT_CONTENT.header.supportLine}</p>
-        </section>
-
-        <!-- BLOCO 2: Insight Rápido -->
-        <section class="result-block disney-reveal" data-delay="200">
-            <h3 class="block-title shimmer-text">${RESULT_CONTENT.insightRapido.title}</h3>
-            <p class="block-text">${RESULT_CONTENT.insightRapido.text}</p>
-        </section>
-
-        <!-- BLOCO 3: Dia a Dia -->
-        <section class="result-block disney-reveal" data-delay="400">
-            <h3 class="block-title shimmer-text">${RESULT_CONTENT.diaADia.title}</h3>
-            <p class="severity-intro" style="--severity-color: ${profile.color}">${severityIntro}</p>
-            <ul class="symptom-list">
-                ${RESULT_CONTENT.diaADia.symptoms.map((s, i) => `
-                    <li class="symptom-item" style="--stagger: ${i}">${s}</li>
-                `).join('')}
-            </ul>
-            <p class="highlight-quote" style="--accent: ${profile.color}">${RESULT_CONTENT.diaADia.closing}</p>
-        </section>
-
-        <!-- BLOCO 4: Mecanismo -->
-        <section class="result-block disney-reveal" data-delay="600">
-            <h3 class="block-title shimmer-text">${RESULT_CONTENT.mecanismo.title}</h3>
-            <p class="block-text">${RESULT_CONTENT.mecanismo.intro}</p>
-            <div class="mechanism-steps">
-                ${RESULT_CONTENT.mecanismo.steps.map((step, i) => `
-                    <div class="mechanism-step" style="--step-index: ${i}">
-                        <div class="step-number" style="background: ${profile.gradient}">${step.number}</div>
-                        <div class="step-content">
-                            <strong class="step-title">${step.title}</strong>
-                            <p class="step-text">${step.text}</p>
-                        </div>
+            <!-- ANÁLISE TÉCNICA (colapsável) -->
+            <div class="result-block" data-delay="8">
+                <details class="technical-details">
+                    <summary class="technical-summary">Ver análise técnica detalhada</summary>
+                    <div class="technical-content">
+                        ${categories.map(cat => `
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <span class="category-icon">${cat.icon}</span>
+                                    <span class="category-name">${cat.name}</span>
+                                    <span class="category-level" style="color: ${cat.levelColor}">${cat.levelLabel}</span>
+                                </div>
+                                <div class="category-bar-track">
+                                    <div class="category-bar-fill" data-width="${cat.pct}" style="background: ${cat.levelColor}; width: 0%"></div>
+                                </div>
+                                <p class="category-insight">${cat.insight}</p>
+                                ${cat.refs && cat.refs.length > 0 ? `
+                                <div class="category-refs">
+                                    ${cat.refs.map(ref => `<span class="ref-tag">${ref.author}, ${ref.year}</span>`).join('')}
+                                </div>` : ''}
+                            </div>
+                        `).join('')}
                     </div>
-                    ${i < 2 ? '<div class="step-connector"><div class="connector-line"></div></div>' : ''}
-                `).join('')}
+                </details>
             </div>
-            <p class="block-text mechanism-closing">${RESULT_CONTENT.mecanismo.closing}</p>
-        </section>
 
-        <!-- BLOCO 5: Próximo Passo -->
-        <section class="result-block disney-reveal" data-delay="800">
-            <h3 class="block-title shimmer-text">${RESULT_CONTENT.proximoPasso.title}</h3>
-            <p class="block-text">${RESULT_CONTENT.proximoPasso.intro}</p>
-            <ul class="benefit-list">
-                ${RESULT_CONTENT.proximoPasso.benefits.map((b, i) => `
-                    <li class="benefit-item" style="--stagger: ${i}">
-                        <span class="benefit-check">&#10003;</span>
-                        <span>${b}</span>
-                    </li>
-                `).join('')}
-            </ul>
-        </section>
+            <!-- COMPARTILHAR -->
+            <div class="result-block" data-delay="9">
+                <div class="share-buttons">
+                    <button class="share-btn share-whatsapp" onclick="shareWhatsApp()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Enviar via WhatsApp
+                    </button>
+                    <button class="share-btn share-copy" id="btn-copy-link" onclick="copyShareLink()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copiar Link
+                    </button>
+                </div>
+            </div>
 
-        <!-- BLOCO 6: Sessão Demonstrativa -->
-        <section class="result-block result-session disney-reveal" data-delay="1000" style="--accent: ${profile.color}">
-            <h3 class="block-title shimmer-text">${RESULT_CONTENT.sessao.title}</h3>
-            <p class="block-text">${sessionIntro}</p>
-            <p class="block-text session-details">${RESULT_CONTENT.sessao.sessionDetails}</p>
-            <ul class="deliverable-list">
-                ${RESULT_CONTENT.sessao.deliverables.map((d, i) => `
-                    <li class="deliverable-item" style="--stagger: ${i}">
-                        <span class="deliverable-icon">&#9679;</span>
-                        <span>${d}</span>
-                    </li>
-                `).join('')}
-            </ul>
-            <p class="session-disclaimer">${RESULT_CONTENT.sessao.disclaimer}</p>
-        </section>
-
-        <!-- BLOCO 7: Urgência Suave -->
-        <section class="result-block urgency-block disney-reveal" data-delay="1200" style="--accent: ${profile.color}">
-            ${RESULT_CONTENT.urgencia.map(p => `<p class="urgency-text">${p}</p>`).join('')}
-        </section>
-
-        <!-- BLOCO 8: CTA -->
-        <section class="result-cta disney-reveal" data-delay="1400">
-            <button class="cta-btn disney-glow" id="cta-main-btn" style="--btn-gradient: ${profile.gradient}; --btn-glow: ${profile.colorGlow}">
-                ${RESULT_CONTENT.cta.buttonText}
-                <span class="cta-arrow">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </span>
-            </button>
-            <p class="cta-sub-text">${ctaSubText}</p>
-        </section>
-
-        <!-- Rodapé -->
-        <footer class="result-footer disney-reveal" data-delay="1600">
-            <p>${footerText}</p>
-        </footer>
+        </div>
     `;
-
-    // CTA click handler
-    const ctaBtn = document.getElementById('cta-main-btn');
-    if (ctaBtn) {
-        ctaBtn.addEventListener('click', () => {
-            haptic('medium');
-            trackEvent('quiz_result_cta_click', {
-                instructor: profData.name || instructor.instructorName,
-                profile: profile.title,
-                faixa: faixa,
-                score: healthScore
-            });
-            const ctaUrl = instructor.ctaUrl || params.get('cta_url') || '';
-            if (ctaUrl) {
-                window.open(ctaUrl, '_blank');
-            }
-        });
-    }
 
     // Track results view
     trackEvent('quiz_completed', {
         profile: profile.title,
         total_score: totalScore,
-        health_score: healthScore,
-        faixa: faixa
+        health_score: healthScore
     });
 
     // Animate everything after render
     setTimeout(() => {
         animateScoreRing(healthScore);
-        observeDisneyReveals();
+        animateCategoryBars();
+        observeFadeInSections();
         launchConfetti();
         haptic('success');
     }, 300);
-}
-
-// ---- DISNEY REVEAL OBSERVER ----
-function observeDisneyReveals() {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const el = entry.target;
-                const delay = parseInt(el.dataset.delay || '0', 10);
-                setTimeout(() => {
-                    el.classList.add('visible');
-                    // Animate symptom/benefit list items with stagger
-                    el.querySelectorAll('.symptom-item, .benefit-item, .deliverable-item').forEach((item, i) => {
-                        setTimeout(() => item.classList.add('visible'), i * 120);
-                    });
-                    // Animate mechanism steps
-                    el.querySelectorAll('.mechanism-step').forEach((step, i) => {
-                        setTimeout(() => step.classList.add('visible'), i * 300);
-                    });
-                    el.querySelectorAll('.step-connector').forEach((conn, i) => {
-                        setTimeout(() => conn.classList.add('visible'), (i + 1) * 300);
-                    });
-                }, delay);
-                observer.unobserve(el);
-            }
-        });
-    }, { threshold: 0.15 });
-
-    document.querySelectorAll('.disney-reveal').forEach(section => {
-        observer.observe(section);
-    });
 }
 
 function animateScoreRing(target) {
@@ -1559,22 +1573,58 @@ function animateScoreRing(target) {
     requestAnimationFrame(update);
 }
 
-// Legacy functions kept for compatibility
-function animateCategoryBars() {}
-function observeFadeInSections() {}
+function animateCategoryBars() {
+    document.querySelectorAll('.category-bar-fill').forEach(bar => {
+        const targetWidth = bar.dataset.width;
+        setTimeout(() => {
+            bar.style.width = targetWidth + '%';
+        }, 500);
+    });
+}
+
+function observeFadeInSections() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const delay = parseInt(entry.target.dataset.delay || 0) * 120;
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, delay);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.08 });
+
+    // Support both old and new selectors
+    document.querySelectorAll('.fade-in-section, .result-block').forEach(section => {
+        observer.observe(section);
+    });
+}
 
 // ---- CTA CLICK ----
-function handleCtaClick() {
+function handleResultCta() {
     const instructor = getInstructorConfig();
     haptic('medium');
-    trackEvent('cta_clicked', {
+    trackEvent('quiz_result_cta_click', {
         instructor: instructor.instructorName,
         cta_url: instructor.ctaUrl,
-        profile: getProfile().title
+        profile: getProfile().title,
+        total_score: totalScore
     });
     if (instructor.ctaUrl) {
-        window.open(instructor.ctaUrl, '_blank');
+        try {
+            const url = new URL(instructor.ctaUrl);
+            if (url.protocol === 'https:' || url.protocol === 'http:') {
+                window.open(url.href, '_blank', 'noopener,noreferrer');
+            }
+        } catch (e) {
+            // Invalid URL, ignore
+        }
     }
+}
+
+function handleCtaClick() {
+    handleResultCta();
 }
 
 // ---- CONFETTI CELEBRATION ----

@@ -25,8 +25,16 @@ Thumbs.db
 
 # AIOX Local (AIOX)
 .aiox-core/local/
-.claude/settings.local.json
 .aiox/install-log.txt
+
+# IDE & AI tool caches
+.claude/
+.codex/
+.cursor/
+.gemini/
+.antigravity/
+
+# Admin build & deps
 admin/node_modules/
 admin/.next/
 admin/.env.local

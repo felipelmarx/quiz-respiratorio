@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protótipo A — Verde Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #2D5A3D;
+            --primary-light: #4A7C59;
+            --primary-glow: rgba(45, 90, 61, 0.3);
+            --accent: #6ba378;
+            --bg: #FAFBFA;
+            --bg-hero: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #4A4A4A;
+            --text-dim: #9E9E9E;
+        }
+
+        html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-hero);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ---- Canvas ---- */
+        #particles {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ---- Hero ---- */
+        .hero {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            height: 100dvh;
+            padding: 24px 20px;
+            text-align: center;
+        }
+
+        /* ---- Breathing Lung SVG ---- */
+        .lung-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 32px;
+        }
+
+        .lung-glow {
+            position: absolute;
+            inset: -20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        .lung-svg {
+            position: relative;
+            z-index: 1;
+            width: 120px;
+            height: 120px;
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(0.92); opacity: 0.85; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+        }
+
+        /* ---- Logo ---- */
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .logo-text {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        /* ---- Typography ---- */
+        .title {
+            font-size: clamp(28px, 6vw, 48px);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 16px;
+            color: var(--text);
+            opacity: 0;
+            animation: fadeUp 0.8s 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .title-highlight {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: clamp(15px, 3.5vw, 18px);
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            max-width: 440px;
+            margin: 0 auto 32px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ---- Badges ---- */
+        .badges {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 36px;
+            opacity: 0;
+            animation: fadeUp 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: rgba(45, 90, 61, 0.06);
+            padding: 8px 14px;
+            border-radius: 100px;
+            border: 1px solid rgba(45, 90, 61, 0.1);
+        }
+
+        .badge-icon {
+            font-size: 14px;
+        }
+
+        /* ---- CTA Button ---- */
+        .cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 36px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #FFFFFF;
+            background: var(--primary);
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px var(--primary-glow), 0 1px 3px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: fadeUp 0.8s 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .cta:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 32px var(--primary-glow), 0 2px 8px rgba(0,0,0,0.1);
+            background: var(--primary-light);
+        }
+
+        .cta:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .cta-arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .cta:hover .cta-arrow {
+            transform: translateX(4px);
+        }
+
+        /* ---- Trust ---- */
+        .trust {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-dim);
+            opacity: 0;
+            animation: fadeUp 0.8s 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ---- Label ---- */
+        .prototype-label {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 6px;
+            z-index: 100;
+            letter-spacing: 0.05em;
+        }
+
+        /* ---- Animation ---- */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---- Desktop ---- */
+        @media (min-width: 768px) {
+            .lung-container { width: 140px; height: 140px; }
+            .lung-svg { width: 140px; height: 140px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="prototype-label">A — VERDE PREMIUM</div>
+    <canvas id="particles"></canvas>
+
+    <div class="hero">
+        <div class="lung-container">
+            <div class="lung-glow"></div>
+            <svg class="lung-svg" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Left lung -->
+                <path d="M38 35C38 35 28 42 24 55C20 68 22 82 30 88C36 92 42 90 44 84C46 78 48 65 48 55C48 45 44 38 38 35Z" fill="url(#lgL)" opacity="0.2" stroke="#2D5A3D" stroke-width="1.5" stroke-opacity="0.3"/>
+                <!-- Right lung -->
+                <path d="M82 35C82 35 92 42 96 55C100 68 98 82 90 88C84 92 78 90 76 84C74 78 72 65 72 55C72 45 76 38 82 35Z" fill="url(#lgR)" opacity="0.2" stroke="#2D5A3D" stroke-width="1.5" stroke-opacity="0.3"/>
+                <!-- Trachea -->
+                <path d="M60 18L60 40" stroke="#2D5A3D" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+                <!-- Bronchi -->
+                <path d="M60 40C60 40 48 48 42 38" stroke="#2D5A3D" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+                <path d="M60 40C60 40 72 48 78 38" stroke="#2D5A3D" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+                <!-- Inner bronchioles left -->
+                <path d="M42 38C42 38 34 50 30 60" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                <path d="M42 38C42 38 38 52 36 65" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                <!-- Inner bronchioles right -->
+                <path d="M78 38C78 38 86 50 90 60" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                <path d="M78 38C78 38 82 52 84 65" stroke="#4A7C59" stroke-width="1.2" stroke-linecap="round" opacity="0.3"/>
+                <!-- Air flow dots -->
+                <circle cx="60" cy="24" r="2" fill="#6ba378" opacity="0.6">
+                    <animate attributeName="cy" values="18;32;18" dur="4s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="4s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="56" cy="30" r="1.5" fill="#6ba378" opacity="0.4">
+                    <animate attributeName="cy" values="30;50;30" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                    <animate attributeName="cx" values="56;40;56" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="64" cy="30" r="1.5" fill="#6ba378" opacity="0.4">
+                    <animate attributeName="cy" values="30;50;30" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                    <animate attributeName="cx" values="64;80;64" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="4s" begin="0.5s" repeatCount="indefinite"/>
+                </circle>
+                <defs>
+                    <linearGradient id="lgL" x1="24" y1="35" x2="48" y2="88">
+                        <stop stop-color="#2D5A3D"/>
+                        <stop offset="1" stop-color="#6ba378"/>
+                    </linearGradient>
+                    <linearGradient id="lgR" x1="96" y1="35" x2="72" y2="88">
+                        <stop stop-color="#2D5A3D"/>
+                        <stop offset="1" stop-color="#6ba378"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+
+        <div class="logo">
+            <div class="logo-dot"></div>
+            <span class="logo-text">iBreathwork</span>
+        </div>
+
+        <h1 class="title">
+            Teste de Ansiedade por<br>
+            <span class="title-highlight">Disfunção Respiratória</span>
+        </h1>
+
+        <p class="subtitle">
+            Descubra o quanto sua respiração está contribuindo para a ansiedade que você sente no dia a dia.
+        </p>
+
+        <div class="badges">
+            <div class="badge"><span class="badge-icon">⏱</span> 5 min</div>
+            <div class="badge"><span class="badge-icon">✓</span> Gratuito</div>
+            <div class="badge"><span class="badge-icon">🔬</span> Científico</div>
+        </div>
+
+        <button class="cta">
+            Iniciar Avaliação Gratuita
+            <span class="cta-arrow">→</span>
+        </button>
+
+        <p class="trust">Gratuito e confidencial · Mais de 2.000 pessoas já fizeram</p>
+    </div>
+
+    <script>
+        // ============================================
+        // CANVAS PARTICLE SYSTEM — AIR FLOW
+        // ============================================
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [], mouse = { x: -1000, y: -1000 };
+
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Track mouse for interactivity
+        document.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        class Particle {
+            constructor() { this.reset(); }
+
+            reset() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.size = Math.random() * 2.5 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.3;
+                this.speedY = -Math.random() * 0.4 - 0.1; // float upward (like breath)
+                this.opacity = Math.random() * 0.3 + 0.05;
+                this.life = Math.random() * 200 + 100;
+                this.maxLife = this.life;
+            }
+
+            update() {
+                // Mouse repulsion
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 120) {
+                    const force = (120 - dist) / 120;
+                    this.speedX += (dx / dist) * force * 0.15;
+                    this.speedY += (dy / dist) * force * 0.15;
+                }
+
+                // Gentle sine wave drift
+                this.x += this.speedX + Math.sin(Date.now() * 0.001 + this.y * 0.01) * 0.15;
+                this.y += this.speedY;
+
+                // Damping
+                this.speedX *= 0.99;
+                this.speedY *= 0.99;
+
+                this.life--;
+                if (this.life <= 0 || this.y < -10 || this.x < -10 || this.x > w + 10) {
+                    this.reset();
+                    this.y = h + 10;
+                }
+            }
+
+            draw() {
+                const fadeRatio = this.life / this.maxLife;
+                const alpha = this.opacity * (fadeRatio < 0.3 ? fadeRatio / 0.3 : fadeRatio > 0.7 ? (1 - fadeRatio) / 0.3 : 1);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(45, 90, 61, ${alpha})`;
+                ctx.fill();
+            }
+        }
+
+        // Create particles
+        const count = Math.min(Math.floor(w * h / 8000), 150);
+        for (let i = 0; i < count; i++) particles.push(new Particle());
+
+        // Draw connections between nearby particles
+        function drawConnections() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        const alpha = (1 - dist / 100) * 0.06;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(45, 90, 61, ${alpha})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            particles.forEach(p => { p.update(); p.draw(); });
+            drawConnections();
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>

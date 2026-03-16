@@ -1,0 +1,7 @@
+date|decision|reasoning|expected_outcome|review_date|status
+2026-03-16|Keep 2 Vercel projects (quiz + admin), delete 3 duplicates|3 duplicate projects waste edge requests and create confusion|Cleaner infra, less confusion, lower costs|2026-04-15|ACTIVE
+2026-03-16|Use parameterized queries for all SQL in admin dashboard|Raw SQL concatenation was creating SQL injection vulnerabilities|Zero SQL injection vectors in admin API routes|2026-04-15|ACTIVE
+2026-03-16|Add rate limiting + CSRF protection to admin API|API routes had no abuse protection|Prevent brute force and CSRF attacks on admin|2026-04-15|ACTIVE
+2026-03-16|Landing page redesign: Canvas/WebGL particles for hero animation|User wants premium Apple+Disney experience with interactive air flow|Stunning first impression with breathing particles that react to mouse|2026-04-15|ACTIVE
+2026-03-16|Keep quiz as vanilla HTML/CSS/JS (no framework migration)|Lighter, instant load, no dependencies. Framework adds complexity without proportional benefit|Fast load time, zero bundle overhead, easy maintenance|2026-04-15|ACTIVE
+2026-03-16|Create 3 palette prototypes before final implementation|User wants to compare Green vs Navy+Gold vs Hybrid before committing|Better design decision with visual comparison, avoid rework|2026-04-15|ACTIVE
