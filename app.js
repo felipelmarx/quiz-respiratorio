@@ -38,26 +38,77 @@ function escapeHTML(str) {
     return div.innerHTML;
 }
 
-// ---- INSTRUCTOR URL PARAMS ----
-// Each instructor gets a personalized link, e.g.:
-// seusite.com/quiz/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
-// seusite.com/quiz/?instrutor=Dra.Ana&cta_url=https://calendly.com/dra-ana&cta_text=Marcar+Avaliação
+// ---- INSTRUCTOR LINK SYSTEM ----
+// Personalized link via slug: seusite.com/?ref=dr-felipe
+// Legacy URL params still supported as fallback:
+//   seusite.com/?instrutor=Dr.Felipe&cta_url=https://wa.me/5511999&cta_text=Agendar+Consulta
 const INSTRUCTOR_DEFAULTS = {
-    ctaUrl: '',                      // Default CTA URL (empty = no redirect)
-    ctaText: 'Quero Saber Mais',     // Default button text
-    instructorName: '',              // No instructor by default
-    profissao: '',                   // e.g. 'psicólogo(a)', 'terapeuta'
-    cidade: '',                      // e.g. 'São Paulo'
+    ctaUrl: '',
+    ctaText: 'Quero Saber Mais',
+    instructorName: '',
+    profissao: '',
+    cidade: '',
 };
+
+// Resolved instructor data (populated async from DB when ?ref= is present)
+let resolvedInstructor = null; // { id, name, profissao, cidade, nome_clinica, whatsapp }
+
+async function resolveInstructorSlug() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('ref');
+    if (!slug || !SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) return;
+
+    try {
+        const response = await fetch(
+            `${SUPABASE_CONFIG.url}/rest/v1/rpc/get_instructor_by_slug`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_CONFIG.anonKey,
+                    'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+                },
+                body: JSON.stringify({ p_slug: slug }),
+            }
+        );
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.id) {
+                resolvedInstructor = data;
+                console.log('[Instructor] Resolved:', data.name);
+            }
+        }
+    } catch (error) {
+        console.error('[Instructor] Error resolving slug:', error);
+    }
+}
 
 function getInstructorConfig() {
     const params = new URLSearchParams(window.location.search);
+
+    // Slug-resolved instructor takes priority
+    if (resolvedInstructor) {
+        const whatsapp = resolvedInstructor.whatsapp;
+        const ctaUrl = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : '';
+        return {
+            ctaUrl: params.get('cta_url') || ctaUrl,
+            ctaText: params.get('cta_text') || (ctaUrl ? 'Falar pelo WhatsApp' : INSTRUCTOR_DEFAULTS.ctaText),
+            instructorName: resolvedInstructor.name,
+            profissao: resolvedInstructor.profissao || '',
+            cidade: resolvedInstructor.cidade || '',
+            instructorId: resolvedInstructor.id,
+        };
+    }
+
+    // Legacy URL params fallback
     return {
         ctaUrl: params.get('cta_url') || INSTRUCTOR_DEFAULTS.ctaUrl,
         ctaText: params.get('cta_text') || INSTRUCTOR_DEFAULTS.ctaText,
         instructorName: params.get('instrutor') || INSTRUCTOR_DEFAULTS.instructorName,
         profissao: params.get('profissao') || INSTRUCTOR_DEFAULTS.profissao,
         cidade: params.get('cidade') || INSTRUCTOR_DEFAULTS.cidade,
+        instructorId: null,
     };
 }
 
@@ -139,11 +190,13 @@ async function saveAnonymousResponse() {
 
     const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
 
+    const instructor = getInstructorConfig();
     const responseData = {
         answers: answers,
         scores: scores,
         total_score: totalScore,
-        profile: profileKey
+        profile: profileKey,
+        instructor_id: instructor.instructorId || null,
     };
 
     try {
@@ -213,7 +266,6 @@ async function saveApplication(leadData) {
                     },
                     body: JSON.stringify({
                         lead_id: leadId,
-                        instructor_id: leadData.instructor_id || null
                     })
                 }
             );
@@ -1287,11 +1339,13 @@ function submitFinalApplication() {
     applicationData.available_periods = selectedPeriods;
     applicationData.committed = committed;
 
+    const instructorConfig = getInstructorConfig();
     const leadData = {
         name: applicationData.name,
         email: applicationData.email,
         phone: applicationData.phone || null,
         referral: applicationData.referral || null,
+        instructor_id: instructorConfig.instructorId || null,
         extra_data: {
             problems: applicationData.problems,
             priority: applicationData.priority,
@@ -1769,6 +1823,7 @@ function copyShareLink() {
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
     initParticles();
+    resolveInstructorSlug();
 
     // Initialize analytics if configured
     if (ANALYTICS_CONFIG.ga4MeasurementId) {

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { StatsCards } from '@/components/dashboard/stats-cards'
+import { PersonalizedLink } from '@/components/dashboard/personalized-link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, getProfileLabel } from '@/lib/utils'
@@ -8,12 +9,14 @@ import type { QuizProfile } from '@/lib/types/database'
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Fetch stats
+  // Fetch current user slug + stats in parallel
+  const userPromise = supabase.auth.getUser()
   const [
     { count: totalLeads },
     { count: totalResponses },
     { data: allResponses },
     { data: recentResponses },
+    { data: { user: authUser } },
   ] = await Promise.all([
     supabase.from('quiz_leads').select('*', { count: 'exact', head: true }),
     supabase.from('quiz_responses').select('*', { count: 'exact', head: true }),
@@ -22,7 +25,23 @@ export default async function DashboardPage() {
       .select('id, total_score, profile, created_at, quiz_leads!inner(name, email)')
       .order('created_at', { ascending: false })
       .limit(10),
+    userPromise,
   ])
+
+  // Fetch instructor slug for personalized link
+  let instructorSlug: string | null = null
+  if (authUser) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('slug, role')
+      .eq('id', authUser.id)
+      .single()
+    if (userData?.role === 'instructor' && userData.slug) {
+      instructorSlug = userData.slug
+    }
+  }
+
+  const quizBaseUrl = process.env.NEXT_PUBLIC_QUIZ_URL || (process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.replace('/admin', '') : '')
 
   const profileDistribution: Record<QuizProfile, number> = {
     funcional: 0,
@@ -54,6 +73,10 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 mt-1">Visão geral das respostas do quiz respiratório</p>
       </div>
+
+      {instructorSlug && quizBaseUrl && (
+        <PersonalizedLink slug={instructorSlug} quizBaseUrl={quizBaseUrl} />
+      )}
 
       <StatsCards
         totalLeads={totalLeads || 0}
