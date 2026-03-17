@@ -41,7 +41,7 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
     return hasPermission(userRole, permissions, link.permission)
   })
 
-  const links = userRole === 'master'
+  const links = userRole === 'admin'
     ? [...masterLinks, { href: '---', label: 'divider', icon: '' }, ...visibleInstructorLinks]
     : visibleInstructorLinks
 
@@ -101,7 +101,7 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-              <p className="text-xs text-gray-500 capitalize">{userRole === 'master' ? 'Admin Master' : 'Instrutor'}</p>
+              <p className="text-xs text-gray-500 capitalize">{userRole === 'admin' ? 'Administrador' : 'Instrutor'}</p>
             </div>
           </div>
           <form action="/api/auth/logout" method="POST" className="mt-3">

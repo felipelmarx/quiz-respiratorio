@@ -89,14 +89,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin routes — master only
-  if (pathname.startsWith('/admin') && userData?.role !== 'master') {
+  // Admin routes — admin only
+  if (pathname.startsWith('/admin') && userData?.role !== 'admin') {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Permission-based route blocking (instructors only, masters bypass)
+  // Permission-based route blocking (instructors only, admins bypass)
   if (userData?.role === 'instructor') {
     const requiredPerm = routePermissions[pathname]
     if (requiredPerm) {

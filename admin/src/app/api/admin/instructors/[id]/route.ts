@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    if (authUser.role !== 'master') {
+    if (authUser.role !== 'admin') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
