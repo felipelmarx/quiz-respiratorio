@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (caller?.role !== 'master') {
+    if (caller?.role !== 'admin') {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 

@@ -60,7 +60,7 @@ function LoginForm() {
         .single()
 
       const role = (userData as { role: string } | null)?.role
-      if (role === 'master') {
+      if (role === 'admin') {
         router.push('/admin')
       } else {
         router.push(redirect)

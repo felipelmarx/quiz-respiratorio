@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'master') {
+    if (!authUser || authUser.role !== 'admin') {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST() {
   try {
     const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'master') {
+    if (!authUser || authUser.role !== 'admin') {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 

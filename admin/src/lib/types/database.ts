@@ -1,4 +1,4 @@
-export type UserRole = 'master' | 'instructor'
+export type UserRole = 'admin' | 'instructor'
 
 export type Permission =
   | 'view_dashboard'

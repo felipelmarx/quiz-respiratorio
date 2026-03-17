@@ -10,7 +10,7 @@ export function hasPermission(
   permissions: UserPermissions | null | undefined,
   permission: Permission
 ): boolean {
-  if (role === 'master') return true
+  if (role === 'admin') return true
   const perms = permissions ?? DEFAULT_PERMISSIONS
   return perms[permission] === true
 }

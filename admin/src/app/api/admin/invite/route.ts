@@ -17,7 +17,7 @@ async function verifyMaster() {
     .eq('id', user.id)
     .single()
 
-  if (caller?.role !== 'master') return null
+  if (caller?.role !== 'admin') return null
 
   return user
 }

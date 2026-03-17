@@ -13,7 +13,7 @@ export default async function Home() {
     .eq('id', user.id)
     .single()
 
-  if (userData?.role === 'master') {
+  if (userData?.role === 'admin') {
     redirect('/admin')
   } else {
     redirect('/dashboard')

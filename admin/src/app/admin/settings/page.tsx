@@ -122,7 +122,7 @@ VALUES (
   'COLE_O_AUTH_USER_ID_AQUI',
   'seu@email.com',
   'Felipe Marx',
-  'master',
+  'admin',
   'admin',
   true
 );`}
