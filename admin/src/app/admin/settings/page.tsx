@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardTitle>Seed Admin Master</CardTitle>
+          <CardTitle>Seed Admin</CardTitle>
           <p className="mt-2 text-sm text-gray-500">
             Para criar o primeiro Admin Master, execute no Supabase SQL Editor:
           </p>

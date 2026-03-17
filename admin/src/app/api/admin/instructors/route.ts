@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify caller is master
+    // Verify caller is admin
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

@@ -3,7 +3,7 @@ import { DEFAULT_PERMISSIONS } from '@/lib/types/database'
 
 /**
  * Check if a user has a specific permission.
- * Master users always have all permissions.
+ * Admin users always have all permissions.
  */
 export function hasPermission(
   role: UserRole,
