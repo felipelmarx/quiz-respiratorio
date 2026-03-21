@@ -43,7 +43,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/quiz/submit') ||
     pathname === '/login' ||
     pathname === '/signup' ||
+    pathname === '/reset-password' ||
     pathname.startsWith('/api/auth/signup') ||
+    pathname.startsWith('/api/auth/setup') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {
