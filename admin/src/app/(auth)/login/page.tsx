@@ -32,11 +32,15 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(errorParam ? errorMessages[errorParam] || '' : '')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetMode, setResetMode] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
 
     try {
@@ -73,6 +77,36 @@ function LoginForm() {
     }
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    setResetLoading(true)
+
+    if (!email) {
+      setError('Digite seu email acima.')
+      setResetLoading(false)
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (resetError) {
+        setError('Erro ao enviar email de recuperação. Tente novamente.')
+      } else {
+        setSuccess('Email de recuperação enviado! Verifique sua caixa de entrada.')
+      }
+    } catch {
+      setError('Erro ao enviar email de recuperação.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 px-4">
       <Card className="w-full max-w-md p-8">
@@ -86,39 +120,92 @@ function LoginForm() {
           <p className="text-sm text-gray-500 mt-1">Painel de Administração</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <Input
-            id="email"
-            label="Email"
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
+        {resetMode ? (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <Input
+              id="reset-email"
+              label="Email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
 
-          <Input
-            id="password"
-            label="Senha"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
-          {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+            {success && (
+              <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-600">
+                {success}
+              </div>
+            )}
 
-          <Button type="submit" className="w-full" size="lg" loading={loading}>
-            Entrar
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" size="lg" loading={resetLoading}>
+              Enviar email de recuperação
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => { setResetMode(false); setError(''); setSuccess('') }}
+              className="w-full text-sm text-emerald-700 hover:text-emerald-800 mt-2"
+            >
+              Voltar ao login
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <Input
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+
+            <Input
+              id="password"
+              label="Senha"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-600">
+                {success}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" size="lg" loading={loading}>
+              Entrar
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => { setResetMode(true); setError(''); setSuccess('') }}
+              className="w-full text-sm text-gray-500 hover:text-emerald-700 mt-2"
+            >
+              Esqueceu sua senha?
+            </button>
+          </form>
+        )}
       </Card>
     </div>
   )
