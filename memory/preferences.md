@@ -26,6 +26,15 @@ Project preferences, conventions, and standards.
 - **Respond in**: English (as per system instructions), but user-facing content in Portuguese
 - **Agent system name**: ORION (orchestration engine within AIOX framework)
 
+## IMPORTANTE: Nível técnico do usuário
+
+- **Felipe NÃO é programador** — nunca pedir para "rodar migrações", "executar SQL", ou qualquer comando técnico sem guia visual passo a passo
+- **Sempre guiar passo a passo** com instruções tipo "clica aqui", "cola isso ali", com screenshots quando possível
+- **Quando envolver Supabase**: dar instruções usando a interface web (Dashboard), nunca CLI
+- **Quando envolver Vercel/GitHub**: dar instruções usando a interface web
+- **Nunca assumir** que o usuário sabe rodar terminal, Git, npm, ou qualquer ferramenta de dev
+- **Se precisar rodar algo técnico**: fazer pelo Claude Code sempre que possível, ou dar passo a passo visual claro
+
 ## Deployment
 
 - **Platform**: Vercel
