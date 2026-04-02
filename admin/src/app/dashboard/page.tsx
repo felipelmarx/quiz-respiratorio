@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/auth'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { PersonalizedLink } from '@/components/dashboard/personalized-link'
 import { Card } from '@/components/ui/card'
@@ -24,8 +25,21 @@ export default async function DashboardPage() {
       .limit(10),
   ])
 
-  const isInstructor = false
-  const instructorSlug: string | null = null
+  const authUser = await getAuthUser()
+  let isInstructor = false
+  let instructorSlug: string | null = null
+
+  if (authUser) {
+    if (authUser.role === 'instructor') {
+      isInstructor = true
+      const { data: profile } = await supabase
+        .from('users')
+        .select('slug')
+        .eq('id', authUser.id)
+        .single()
+      instructorSlug = profile?.slug ?? null
+    }
+  }
 
   const quizBaseUrl = process.env.NEXT_PUBLIC_QUIZ_URL
     || (process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/admin\/?$/, '') : '')

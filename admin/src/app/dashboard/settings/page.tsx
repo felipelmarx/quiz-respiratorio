@@ -59,7 +59,7 @@ export default function SettingsPage() {
     } else {
       setMessage('Configurações salvas!')
       if (slug) {
-        setQuizLink(`${window.location.origin}/quiz?instrutor=${slug}`)
+        setQuizLink(`${window.location.origin}/quiz?ref=${slug}`)
       }
     }
     setSaving(false)
