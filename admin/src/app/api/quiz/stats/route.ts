@@ -1,21 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthUser } from '@/lib/auth'
-import { hasPermission } from '@/lib/permissions'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const authUser = await getAuthUser()
-
-    if (!authUser) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    if (!hasPermission(authUser.role, authUser.permissions, 'view_dashboard')) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-    }
+    const auth = await requireAuth({ permission: 'view_dashboard' })
+    if (!auth.ok) return auth.response
 
     const supabase = await createClient()
 

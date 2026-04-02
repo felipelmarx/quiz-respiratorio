@@ -1,12 +1,16 @@
 import { randomBytes } from 'crypto'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET — Fetch current active invite token
 export async function GET() {
   try {
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
+
     const adminClient = createAdminClient()
     const { data } = await adminClient
       .from('invite_tokens')
@@ -25,6 +29,9 @@ export async function GET() {
 // POST — Generate new invite token (deactivates previous)
 export async function POST() {
   try {
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
+
     const adminClient = createAdminClient()
 
     // Deactivate all previous tokens

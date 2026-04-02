@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST() {
   try {
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
+
     const adminClient = createAdminClient()
 
     // Get all auth users

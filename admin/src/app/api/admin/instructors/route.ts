@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { instructorCreateSchema } from '@/lib/validations'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
+
     // Parse and validate body
     const body = await request.json()
     const parsed = instructorCreateSchema.safeParse(body)
