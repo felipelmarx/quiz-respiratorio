@@ -1,25 +1,10 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { DEFAULT_PERMISSIONS } from '@/lib/types/database'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('name, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!userData || userData.role !== 'admin') redirect('/dashboard')
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar userName={userData.name} userRole={userData.role} permissions={DEFAULT_PERMISSIONS} />
+      <Sidebar userName="Admin" userRole="admin" permissions={DEFAULT_PERMISSIONS} />
       <main className="ml-64 p-8">
         {children}
       </main>

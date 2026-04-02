@@ -1,35 +1,12 @@
 import { randomBytes } from 'crypto'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
-async function verifyMaster() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: caller } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (caller?.role !== 'admin') return null
-
-  return user
-}
-
 // GET — Fetch current active invite token
 export async function GET() {
   try {
-    const user = await verifyMaster()
-    if (!user) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
-    }
-
     const adminClient = createAdminClient()
     const { data } = await adminClient
       .from('invite_tokens')
@@ -48,11 +25,6 @@ export async function GET() {
 // POST — Generate new invite token (deactivates previous)
 export async function POST() {
   try {
-    const user = await verifyMaster()
-    if (!user) {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
-    }
-
     const adminClient = createAdminClient()
 
     // Deactivate all previous tokens
@@ -69,7 +41,6 @@ export async function POST() {
       .insert({
         token,
         is_active: true,
-        created_by: user.id,
       })
 
     if (error) {

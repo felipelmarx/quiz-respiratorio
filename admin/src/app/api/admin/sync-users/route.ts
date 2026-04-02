@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -12,13 +11,6 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST() {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
     const adminClient = createAdminClient()
 
     // Get all auth users
@@ -67,33 +59,11 @@ export async function POST() {
       }
     }
 
-    // Now check if the caller is in the users table and make them admin if they're the first user
-    const { data: callerData } = await adminClient
-      .from('users')
-      .select('id, role')
-      .eq('id', user.id)
-      .single()
-
-    // If only one user exists and it's the caller, promote to admin
-    const { count } = await adminClient
-      .from('users')
-      .select('id', { count: 'exact', head: true })
-
-    let promotedToAdmin = false
-    if (callerData && count === 1) {
-      await adminClient
-        .from('users')
-        .update({ role: 'admin' })
-        .eq('id', user.id)
-      promotedToAdmin = true
-    }
-
     return NextResponse.json({
       success: true,
       synced: created,
       total_auth_users: authData.users.length,
       total_db_users: (dbUsers?.length || 0) + created.length,
-      promoted_to_admin: promotedToAdmin,
     })
   } catch (error) {
     console.error('Sync users error:', error)
