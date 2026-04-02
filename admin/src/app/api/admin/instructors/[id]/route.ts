@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthUser } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { permissionsSchema, instructorUpdateSchema } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
@@ -10,15 +10,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await getAuthUser()
-
-    if (!authUser) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    if (authUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
-    }
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
 
     const supabase = await createClient()
 
