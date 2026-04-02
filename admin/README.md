@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quiz Respiratorio - Admin Dashboard
 
-## Getting Started
+Next.js 14 admin dashboard for managing the Quiz Respiratorio platform. Built with TypeScript, Supabase, and TailwindCSS.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # Configure Supabase credentials
+npm install
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env.local` and fill in the values:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| `NEXT_PUBLIC_APP_URL` | Application URL (e.g., `http://localhost:3000`) |
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+### App Router Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/app/
+├── (auth)/                    # Authentication pages
+│   ├── login/page.tsx         # Login form
+│   ├── signup/page.tsx        # Invite-only registration
+│   └── reset-password/page.tsx
+├── (public)/
+│   └── quiz/page.tsx          # Public quiz embed
+├── admin/                     # Admin-only section
+│   ├── page.tsx               # Admin dashboard
+│   ├── instructors/page.tsx   # Instructor management
+│   └── settings/page.tsx      # Platform settings
+├── dashboard/                 # Instructor/admin dashboard
+│   ├── page.tsx               # Stats overview
+│   ├── contacts/page.tsx      # Lead management
+│   ├── responses/page.tsx     # Quiz response list
+│   ├── responses/[id]/page.tsx # Response detail
+│   └── settings/page.tsx      # User settings
+└── api/                       # API routes (see below)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### API Routes
 
-## Deploy on Vercel
+**Authentication:**
+- `POST /api/auth/setup` - Initial admin user setup
+- `POST /api/auth/signup` - Register with invite token
+- `POST /api/auth/logout` - End session
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Quiz:**
+- `POST /api/quiz/submit` - Submit quiz answers + scores
+- `GET /api/quiz/responses` - Fetch quiz responses (paginated)
+- `GET /api/quiz/stats` - Dashboard statistics (totals, averages, distribution)
+- `GET /api/quiz/instructor` - Instructor-specific quiz data
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Admin:**
+- `GET /api/admin/instructors` - List all instructors
+- `PATCH /api/admin/instructors/[id]` - Update instructor profile
+- `POST /api/admin/invite` - Generate invite token
+- `POST /api/admin/sync-users` - Sync Supabase auth users with profiles
+- `GET/POST /api/admin/integration` - Third-party integration config
+
+### Components
+
+**Dashboard:**
+- `sidebar.tsx` - Navigation sidebar with role-based menu
+- `stats-cards.tsx` - KPI cards (leads, responses, avg score)
+- `export-csv-button.tsx` - CSV export for responses/leads
+- `personalized-link.tsx` - Instructor personalized quiz link
+
+**UI (shadcn-style):**
+- `button.tsx`, `card.tsx`, `input.tsx`, `badge.tsx`
+
+### Library (`src/lib/`)
+
+- `auth.ts` - Session helpers, user fetching
+- `permissions.ts` - Role-based permission checks
+- `validations.ts` - Input validation (email, phone, etc.)
+- `utils.ts` - Utility functions (cn, formatters)
+- `supabase/client.ts` - Browser Supabase client
+- `supabase/server.ts` - Server-side Supabase client
+- `supabase/admin.ts` - Admin Supabase client (service role)
+- `types/database.ts` - TypeScript types for all database tables
+
+### Middleware
+
+`middleware.ts` handles:
+- Auth session verification
+- Route protection (redirect unauthenticated users to login)
+- Admin route restriction (admin role required)
+
+## User Roles
+
+| Role | Access |
+|------|--------|
+| `admin` | Full access: dashboard, admin panel, instructor management |
+| `instructor` | Dashboard, responses, contacts, settings |
+
+## Permissions
+
+Each user has granular permissions:
+
+- `view_dashboard` - Access dashboard page
+- `view_responses` - View quiz responses
+- `view_contacts` - View lead contacts
+- `export_data` - Export CSV data
+- `manage_settings` - Modify settings
+
+## Commands
+
+```bash
+npm run dev       # Development server
+npm run build     # Production build
+npm run lint      # ESLint check
+npx tsc --noEmit  # TypeScript type check
+```
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Database**: Supabase (PostgreSQL + Auth + RLS)
+- **Styling**: TailwindCSS
+- **UI Components**: shadcn/ui pattern
+- **Deployment**: Vercel

@@ -27,3 +27,13 @@ Architectural and design decisions made throughout the project.
 - Must align with IBNR Branding Book (Navy #0A192F + Gold #C6A868, Playfair Display + Lato)
 - Breathing/lung animation as central visual element
 - Scope: welcome screen (Screen 1) redesign — the one-page hero section
+
+## 2026-04-01 — Project Documentation & Organization
+
+- Created root README.md with full project overview, API reference, setup instructions
+- Created CHANGELOG.md documenting all changes from git history
+- Created CONTRIBUTING.md with development guidelines and conventions
+- Created docs/ folder: architecture.md, api.md, deployment.md
+- Replaced boilerplate admin/README.md with project-specific documentation
+- Added GitHub issue templates (bug report, feature request) and PR template
+- All documentation follows bilingual convention: code in English, context in Portuguese (BR)
