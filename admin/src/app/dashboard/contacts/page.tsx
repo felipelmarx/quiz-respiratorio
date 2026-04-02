@@ -2,24 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { formatDate, formatPhone, getWhatsAppUrl } from '@/lib/utils'
 import { ExportCSVButton } from '@/components/dashboard/export-csv-button'
-import { hasPermission, parsePermissions } from '@/lib/permissions'
 
 export default async function ContactsPage() {
   const supabase = await createClient()
 
-  // Check export_data permission (view_contacts is enforced by middleware)
-  let canExport = true
-  const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role, permissions')
-      .eq('id', user.id)
-      .single()
-    if (userData) {
-      canExport = hasPermission(userData.role, parsePermissions(userData.permissions), 'export_data')
-    }
-  }
+  const canExport = true
 
   const { data: leads } = await supabase
     .from('quiz_leads')

@@ -104,11 +104,6 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
               <p className="text-xs text-gray-500 capitalize">{userRole === 'admin' ? 'Administrador' : 'Instrutor'}</p>
             </div>
           </div>
-          <form action="/api/auth/logout" method="POST" className="mt-3">
-            <button type="submit" className="w-full text-left text-sm text-gray-500 hover:text-red-600 transition-colors">
-              Sair
-            </button>
-          </form>
         </div>
       </div>
     </aside>

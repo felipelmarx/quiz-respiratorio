@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { instructorCreateSchema } from '@/lib/validations'
 
@@ -7,24 +6,6 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify caller is admin
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    const { data: caller } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (caller?.role !== 'admin') {
-      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
-    }
-
     // Parse and validate body
     const body = await request.json()
     const parsed = instructorCreateSchema.safeParse(body)
