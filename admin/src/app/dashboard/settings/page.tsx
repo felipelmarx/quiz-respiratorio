@@ -1,10 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+
+interface NotificationPreferences {
+  email_on_new_response: boolean
+  email_digest_frequency: 'none' | 'daily' | 'weekly'
+  email_digest_day: number
+}
+
+const DEFAULT_PREFS: NotificationPreferences = {
+  email_on_new_response: false,
+  email_digest_frequency: 'none',
+  email_digest_day: 1,
+}
 
 export default function SettingsPage() {
   const [name, setName] = useState('')
@@ -14,6 +26,30 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [quizLink, setQuizLink] = useState('')
+
+  // Notification preferences state
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(DEFAULT_PREFS)
+  const [notifLoading, setNotifLoading] = useState(true)
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifMessage, setNotifMessage] = useState('')
+
+  const loadNotificationPrefs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/quiz/notification-preferences')
+      if (res.ok) {
+        const data = await res.json()
+        setNotifPrefs({
+          email_on_new_response: data.email_on_new_response ?? false,
+          email_digest_frequency: data.email_digest_frequency ?? 'none',
+          email_digest_day: data.email_digest_day ?? 1,
+        })
+      }
+    } catch {
+      // Silently fail — defaults are fine
+    } finally {
+      setNotifLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -38,7 +74,8 @@ export default function SettingsPage() {
       setLoading(false)
     }
     load()
-  }, [])
+    loadNotificationPrefs()
+  }, [loadNotificationPrefs])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -63,6 +100,31 @@ export default function SettingsPage() {
       }
     }
     setSaving(false)
+  }
+
+  async function handleSaveNotifications(e: React.FormEvent) {
+    e.preventDefault()
+    setNotifSaving(true)
+    setNotifMessage('')
+
+    try {
+      const res = await fetch('/api/quiz/notification-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notifPrefs),
+      })
+
+      if (res.ok) {
+        setNotifMessage('Preferências de notificação salvas!')
+      } else {
+        const data = await res.json()
+        setNotifMessage('Erro ao salvar: ' + (data.error || 'Erro desconhecido'))
+      }
+    } catch {
+      setNotifMessage('Erro ao salvar preferências')
+    } finally {
+      setNotifSaving(false)
+    }
   }
 
   if (loading) return <div className="text-gray-400">Carregando...</div>
@@ -128,6 +190,106 @@ export default function SettingsPage() {
               </p>
             )}
           </div>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardTitle>Notificacoes</CardTitle>
+          <p className="text-sm text-gray-500 mt-1 mb-4">
+            Configure como deseja receber alertas sobre novas respostas do quiz.
+          </p>
+
+          {notifLoading ? (
+            <div className="text-gray-400 text-sm">Carregando preferencias...</div>
+          ) : (
+            <form onSubmit={handleSaveNotifications} className="space-y-5">
+              {/* Toggle: email on new response */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notifPrefs.email_on_new_response}
+                  onClick={() =>
+                    setNotifPrefs((p) => ({
+                      ...p,
+                      email_on_new_response: !p.email_on_new_response,
+                    }))
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 ${
+                    notifPrefs.email_on_new_response ? 'bg-navy-900' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                      notifPrefs.email_on_new_response ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className="text-sm font-medium text-gray-700">
+                  Receber email a cada nova resposta
+                </span>
+              </label>
+
+              {/* Digest frequency */}
+              <div className="space-y-1">
+                <label htmlFor="digest-frequency" className="block text-sm font-medium text-gray-700">
+                  Resumo por email
+                </label>
+                <select
+                  id="digest-frequency"
+                  value={notifPrefs.email_digest_frequency}
+                  onChange={(e) =>
+                    setNotifPrefs((p) => ({
+                      ...p,
+                      email_digest_frequency: e.target.value as 'none' | 'daily' | 'weekly',
+                    }))
+                  }
+                  className="flex h-10 w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+                >
+                  <option value="none">Nenhum</option>
+                  <option value="daily">Diario</option>
+                  <option value="weekly">Semanal</option>
+                </select>
+              </div>
+
+              {/* Day of week (only for weekly) */}
+              {notifPrefs.email_digest_frequency === 'weekly' && (
+                <div className="space-y-1">
+                  <label htmlFor="digest-day" className="block text-sm font-medium text-gray-700">
+                    Dia do resumo semanal
+                  </label>
+                  <select
+                    id="digest-day"
+                    value={notifPrefs.email_digest_day}
+                    onChange={(e) =>
+                      setNotifPrefs((p) => ({
+                        ...p,
+                        email_digest_day: parseInt(e.target.value),
+                      }))
+                    }
+                    className="flex h-10 w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20"
+                  >
+                    <option value={0}>Domingo</option>
+                    <option value={1}>Segunda-feira</option>
+                    <option value={2}>Terca-feira</option>
+                    <option value={3}>Quarta-feira</option>
+                    <option value={4}>Quinta-feira</option>
+                    <option value={5}>Sexta-feira</option>
+                    <option value={6}>Sabado</option>
+                  </select>
+                </div>
+              )}
+
+              {notifMessage && (
+                <p className={`text-sm ${notifMessage.startsWith('Erro') ? 'text-red-600' : 'text-green-600'}`}>
+                  {notifMessage}
+                </p>
+              )}
+
+              <Button type="submit" loading={notifSaving}>
+                Salvar Notificacoes
+              </Button>
+            </form>
+          )}
         </Card>
       </div>
     </div>
