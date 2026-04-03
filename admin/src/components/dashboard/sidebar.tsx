@@ -51,7 +51,7 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center border-b border-gray-200 px-6">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-700 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-navy-900 flex items-center justify-center">
               <span className="text-white font-bold text-sm">iB</span>
             </div>
             <span className="font-bold text-gray-900">iBreathwork</span>
@@ -76,8 +76,8 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
                     className={cn(
                       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-navy-50 text-navy-900 border-l-2 border-gold-500'
+                        : 'text-gray-600 hover:bg-navy-50 hover:text-navy-700'
                     )}
                   >
                     <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -94,8 +94,8 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
         {/* User */}
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-              <span className="text-sm font-medium text-emerald-700">
+            <div className="h-8 w-8 rounded-full bg-navy-50 flex items-center justify-center">
+              <span className="text-sm font-medium text-navy-700">
                 {userName.charAt(0).toUpperCase()}
               </span>
             </div>
