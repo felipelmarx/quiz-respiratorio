@@ -108,11 +108,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-50 to-gold-50 px-4">
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 mb-4">
-            <svg className="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-navy-50 mb-4">
+            <svg className="w-8 h-8 text-navy-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
@@ -152,7 +152,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => { setResetMode(false); setError(''); setSuccess('') }}
-              className="w-full text-sm text-emerald-700 hover:text-emerald-800 mt-2"
+              className="w-full text-sm text-navy-900 hover:text-navy-700 mt-2"
             >
               Voltar ao login
             </button>
@@ -200,7 +200,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => { setResetMode(true); setError(''); setSuccess('') }}
-              className="w-full text-sm text-gray-500 hover:text-emerald-700 mt-2"
+              className="w-full text-sm text-gray-500 hover:text-navy-900 mt-2"
             >
               Esqueceu sua senha?
             </button>

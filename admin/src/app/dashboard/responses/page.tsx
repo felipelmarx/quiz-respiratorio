@@ -72,7 +72,7 @@ export default function ResponsesPage() {
             />
           </div>
           <select
-            className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+            className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20"
             value={profileFilter}
             onChange={(e) => { setProfileFilter(e.target.value); setPage(1) }}
           >

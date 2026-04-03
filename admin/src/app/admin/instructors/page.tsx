@@ -344,13 +344,13 @@ export default function InstructorsPage() {
                 {ALL_PERMISSIONS.map((perm) => (
                   <label
                     key={perm}
-                    className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-emerald-300 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gold-300 cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={inst.permissions[perm]}
                       onChange={() => togglePermission(inst.id, perm, inst.permissions)}
-                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      className="h-4 w-4 rounded border-gray-300 text-navy-900 focus:ring-gold-500"
                     />
                     <span className="text-sm text-gray-700">{PERMISSION_LABELS[perm]}</span>
                   </label>
@@ -364,7 +364,7 @@ export default function InstructorsPage() {
                   <label className="text-sm text-gray-600">Expira em:</label>
                   <input
                     type="date"
-                    className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20"
                     value={inst.license_expires_at ? inst.license_expires_at.split('T')[0] : ''}
                     onChange={async (e) => {
                       const val = e.target.value

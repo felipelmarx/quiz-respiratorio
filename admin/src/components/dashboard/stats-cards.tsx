@@ -24,7 +24,7 @@ export function StatsCards({ totalLeads, totalResponses, averageScore, profileDi
         {stats.map((stat) => (
           <Card key={stat.label} className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-lg bg-navy-50 flex items-center justify-center shrink-0">
-              <svg className="h-6 w-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-6 w-6 text-navy-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={stat.icon} />
               </svg>
             </div>
@@ -54,7 +54,7 @@ export function StatsCards({ totalLeads, totalResponses, averageScore, profileDi
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-navy-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gold-500 rounded-full transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>

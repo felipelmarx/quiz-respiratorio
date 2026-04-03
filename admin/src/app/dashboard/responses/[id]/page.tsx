@@ -100,8 +100,8 @@ export default async function ResponseDetailPage({ params }: { params: Promise<{
         <Card>
           <CardTitle>Resultado</CardTitle>
           <div className="mt-4 text-center">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-50 mb-4">
-              <span className="text-3xl font-bold text-emerald-700">{response.total_score}</span>
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-navy-50 mb-4">
+              <span className="text-3xl font-bold text-navy-900">{response.total_score}</span>
               <span className="text-sm text-gray-400 ml-0.5">/33</span>
             </div>
             <div>
