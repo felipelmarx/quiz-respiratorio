@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Sidebar
           userName={profile?.name || 'Admin'}
           userRole={user.role}
+          userId={user.id}
           permissions={user.permissions}
         />
         <MainContent>

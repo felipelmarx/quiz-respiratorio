@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useRealtime } from '@/hooks/use-realtime'
 import { Badge } from '@/components/ui/badge'
 import { LineChart } from '@/components/charts/line-chart'
 import { DonutChart } from '@/components/charts/donut-chart'
@@ -57,6 +58,7 @@ interface RecentResponse {
 }
 
 interface UserInfo {
+  id: string
   role: string
   slug: string | null
   quizBaseUrl: string
@@ -173,6 +175,16 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
+  const [hasNewRealtimeData, setHasNewRealtimeData] = useState(false)
+
+  // Realtime subscription — only enabled once we know the user
+  const realtimeRole = userInfo?.role === 'admin' ? 'admin' as const : 'instructor' as const
+  const { latestResponse: realtimeLatest, resetCount: realtimeReset } = useRealtime({
+    userId: userInfo?.id ?? null,
+    userRole: userInfo ? realtimeRole : null,
+    enabled: !!userInfo,
+  })
+  const prevRealtimeIdRef = useRef<string | null>(null)
 
   // Check onboarding status
   useEffect(() => {
@@ -200,6 +212,7 @@ export default function DashboardPage() {
         if (res.ok) {
           const json = await res.json()
           setUserInfo({
+            id: json.id ?? '',
             role: json.role ?? '',
             slug: json.slug ?? null,
             quizBaseUrl:
@@ -255,6 +268,14 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchResponses()
   }, [fetchResponses])
+
+  // Show refresh banner when new realtime response arrives
+  useEffect(() => {
+    if (!realtimeLatest) return
+    if (prevRealtimeIdRef.current === realtimeLatest.id) return
+    prevRealtimeIdRef.current = realtimeLatest.id
+    setHasNewRealtimeData(true)
+  }, [realtimeLatest])
 
   const kpis = data?.kpis
 
@@ -325,6 +346,22 @@ export default function DashboardPage() {
             </p>
           </Card>
         ) : null
+      )}
+
+      {/* ── Realtime refresh banner ──────────────────────────────────────── */}
+      {hasNewRealtimeData && (
+        <button
+          onClick={() => {
+            setHasNewRealtimeData(false)
+            realtimeReset()
+            fetchAnalytics(period)
+            fetchResponses()
+          }}
+          className="w-full rounded-lg border border-gold-300 bg-gold-50 px-4 py-3 text-sm font-medium text-navy-900 hover:bg-gold-100 transition-colors animate-fade-in flex items-center justify-center gap-2"
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-gold-500 animate-pulse" />
+          Nova resposta recebida! Clique para atualizar
+        </button>
       )}
 
       {/* ── Error banner ───────────────────────────────────────────────────── */}

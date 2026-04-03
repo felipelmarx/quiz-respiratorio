@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
 import { useSidebar } from './sidebar-context'
 import type { UserRole, UserPermissions, Permission } from '@/lib/types/database'
+import { RealtimeBadge } from '@/components/dashboard/realtime-badge'
 import {
   LayoutDashboard,
   BarChart3,
@@ -26,6 +27,7 @@ import {
 interface SidebarProps {
   userName: string
   userRole: UserRole
+  userId: string
   permissions?: UserPermissions
 }
 
@@ -53,7 +55,7 @@ const masterLinks: NavLink[] = [
   { href: '/admin/settings', label: 'Configuracoes', icon: Settings },
 ]
 
-export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
+export function Sidebar({ userName, userRole, userId, permissions }: SidebarProps) {
   const pathname = usePathname()
   const { collapsed, mobileOpen, toggle, setMobileOpen } = useSidebar()
 
@@ -122,6 +124,14 @@ export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
                   >
                     {link.label}
                   </span>
+                  {link.label === 'Respostas' && (
+                    <span className={cn(
+                      'ml-auto transition-opacity duration-300',
+                      collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    )}>
+                      <RealtimeBadge userId={userId} userRole={userRole} />
+                    </span>
+                  )}
                 </Link>
               </li>
             )

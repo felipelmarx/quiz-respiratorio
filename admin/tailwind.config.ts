@@ -74,10 +74,20 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateX(-8px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
+        'slide-in-right': {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        'pulse-gold': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(198, 168, 104, 0.6)' },
+          '50%': { boxShadow: '0 0 0 6px rgba(198, 168, 104, 0)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.2s ease-out',
         'slide-in-left': 'slide-in-left 0.2s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'pulse-gold': 'pulse-gold 1.5s ease-in-out infinite',
       },
     },
   },

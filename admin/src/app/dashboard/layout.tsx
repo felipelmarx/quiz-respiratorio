@@ -22,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <Sidebar
           userName={profile?.name || 'Usuario'}
           userRole={user.role}
+          userId={user.id}
           permissions={user.permissions}
         />
         <MainContent>
