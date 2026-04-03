@@ -66,10 +66,10 @@ const categoryLabels: Record<string, string> = {
 }
 
 const categoryMaxScores: Record<string, number> = {
-  padrao: 12,
-  sintomas: 12,
+  padrao: 13,
+  sintomas: 13,
   consciencia: 3,
-  tolerancia: 6,
+  tolerancia: 4,
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {

@@ -47,7 +47,7 @@ const categoryLabels: Record<string, string> = {
 const categoryColors: Record<string, string> = {
   padrao: 'bg-blue-500',
   sintomas: 'bg-amber-500',
-  consciencia: 'bg-emerald-500',
+  consciencia: 'bg-green-500',
   tolerancia: 'bg-purple-500',
 }
 
@@ -599,7 +599,7 @@ export default function ResponsesPage() {
                     key={key}
                     label={label}
                     value={previewItem.scores?.[key] ?? 0}
-                    max={key === 'padrao' ? 9 : key === 'sintomas' ? 9 : key === 'consciencia' ? 6 : 9}
+                    max={key === 'padrao' ? 13 : key === 'sintomas' ? 13 : key === 'consciencia' ? 3 : 4}
                     colorClass={categoryColors[key]}
                   />
                 ))}
