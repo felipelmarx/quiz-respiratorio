@@ -12,6 +12,15 @@ interface NotificationPreferences {
   email_digest_day: number
 }
 
+interface ApiKey {
+  id: string
+  key_prefix: string
+  name: string
+  scopes: string[]
+  last_used_at: string | null
+  created_at: string
+}
+
 const DEFAULT_PREFS: NotificationPreferences = {
   email_on_new_response: false,
   email_digest_frequency: 'none',
@@ -32,6 +41,76 @@ export default function SettingsPage() {
   const [notifLoading, setNotifLoading] = useState(true)
   const [notifSaving, setNotifSaving] = useState(false)
   const [notifMessage, setNotifMessage] = useState('')
+
+  // API keys state
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [apiKeysLoading, setApiKeysLoading] = useState(true)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [generatingKey, setGeneratingKey] = useState(false)
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
+  const [apiKeyMessage, setApiKeyMessage] = useState('')
+  const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null)
+
+  const loadApiKeys = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/keys')
+      if (res.ok) {
+        const json = await res.json()
+        setApiKeys(json.data || [])
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setApiKeysLoading(false)
+    }
+  }, [])
+
+  const handleGenerateKey = async () => {
+    if (!newKeyName.trim()) {
+      setApiKeyMessage('Informe um nome para a chave')
+      return
+    }
+    setGeneratingKey(true)
+    setApiKeyMessage('')
+    setNewlyCreatedKey(null)
+    try {
+      const res = await fetch('/api/v1/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName.trim(), scopes: ['read'] }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setNewlyCreatedKey(json.key)
+        setNewKeyName('')
+        loadApiKeys()
+      } else {
+        setApiKeyMessage(json.error || 'Erro ao gerar chave')
+      }
+    } catch {
+      setApiKeyMessage('Erro ao gerar chave de API')
+    } finally {
+      setGeneratingKey(false)
+    }
+  }
+
+  const handleDeleteKey = async (keyId: string) => {
+    setDeletingKeyId(keyId)
+    try {
+      const res = await fetch(`/api/v1/keys?id=${keyId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setApiKeys((prev) => prev.filter((k) => k.id !== keyId))
+        setApiKeyMessage('Chave revogada com sucesso')
+      } else {
+        const json = await res.json()
+        setApiKeyMessage(json.error || 'Erro ao revogar chave')
+      }
+    } catch {
+      setApiKeyMessage('Erro ao revogar chave')
+    } finally {
+      setDeletingKeyId(null)
+    }
+  }
 
   const loadNotificationPrefs = useCallback(async () => {
     try {
@@ -75,7 +154,8 @@ export default function SettingsPage() {
     }
     load()
     loadNotificationPrefs()
-  }, [loadNotificationPrefs])
+    loadApiKeys()
+  }, [loadNotificationPrefs, loadApiKeys])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -289,6 +369,110 @@ export default function SettingsPage() {
                 Salvar Notificacoes
               </Button>
             </form>
+          )}
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardTitle>Chaves de API</CardTitle>
+          <p className="text-sm text-gray-500 mt-1 mb-4">
+            Gerencie chaves para acessar a API v1 externamente. A chave completa so e exibida uma vez, no momento da criacao.
+          </p>
+
+          {/* Generate new key */}
+          <div className="flex gap-3 items-end mb-6">
+            <div className="flex-1 max-w-xs">
+              <Input
+                id="new-key-name"
+                label="Nome da nova chave"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Ex: Minha Integracao"
+              />
+            </div>
+            <Button
+              onClick={handleGenerateKey}
+              loading={generatingKey}
+              disabled={!newKeyName.trim()}
+            >
+              Gerar Nova Chave
+            </Button>
+          </div>
+
+          {/* Newly created key - show once */}
+          {newlyCreatedKey && (
+            <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+              <p className="text-sm font-semibold text-yellow-800 mb-2">
+                Chave criada com sucesso! Copie agora — ela nao sera exibida novamente.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-white rounded px-3 py-2 text-sm font-mono text-gray-800 border border-yellow-200 break-all select-all">
+                  {newlyCreatedKey}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(newlyCreatedKey)
+                    setApiKeyMessage('Chave copiada!')
+                  }}
+                >
+                  Copiar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {apiKeyMessage && (
+            <p className={`text-sm mb-4 ${apiKeyMessage.startsWith('Erro') ? 'text-red-600' : 'text-green-600'}`}>
+              {apiKeyMessage}
+            </p>
+          )}
+
+          {/* List of existing keys */}
+          {apiKeysLoading ? (
+            <div className="text-gray-400 text-sm">Carregando chaves...</div>
+          ) : apiKeys.length === 0 ? (
+            <p className="text-gray-500 text-sm">Nenhuma chave de API criada ainda.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="pb-2 pr-4 font-medium">Prefixo</th>
+                    <th className="pb-2 pr-4 font-medium">Nome</th>
+                    <th className="pb-2 pr-4 font-medium">Criada em</th>
+                    <th className="pb-2 pr-4 font-medium">Ultimo uso</th>
+                    <th className="pb-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {apiKeys.map((k) => (
+                    <tr key={k.id} className="border-b border-gray-100">
+                      <td className="py-3 pr-4 font-mono text-gray-700">{k.key_prefix}...</td>
+                      <td className="py-3 pr-4 text-gray-900">{k.name}</td>
+                      <td className="py-3 pr-4 text-gray-500">
+                        {new Date(k.created_at).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-500">
+                        {k.last_used_at
+                          ? new Date(k.last_used_at).toLocaleDateString('pt-BR')
+                          : 'Nunca'}
+                      </td>
+                      <td className="py-3">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          loading={deletingKeyId === k.id}
+                          onClick={() => handleDeleteKey(k.id)}
+                        >
+                          Revogar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Card>
       </div>
