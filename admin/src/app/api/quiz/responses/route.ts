@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20') || 20), 100)
     const profile = searchParams.get('profile')
     const search = searchParams.get('search')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
     const offset = (page - 1) * limit
 
     let query = supabase
@@ -38,6 +40,14 @@ export async function GET(request: NextRequest) {
 
     if (profile) {
       query = query.eq('profile', profile)
+    }
+
+    if (dateFrom) {
+      query = query.gte('created_at', `${dateFrom}T00:00:00`)
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', `${dateTo}T23:59:59`)
     }
 
     if (search) {

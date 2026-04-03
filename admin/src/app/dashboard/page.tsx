@@ -8,6 +8,7 @@ import { LineChart } from '@/components/charts/line-chart'
 import { DonutChart } from '@/components/charts/donut-chart'
 import { BarChart } from '@/components/charts/bar-chart'
 import { PersonalizedLink } from '@/components/dashboard/personalized-link'
+import { Onboarding } from '@/components/dashboard/onboarding'
 import { formatDate, getProfileLabel } from '@/lib/utils'
 import type { QuizProfile } from '@/lib/types/database'
 
@@ -170,6 +171,26 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [responsesLoading, setResponsesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingChecked, setOnboardingChecked] = useState(false)
+
+  // Check onboarding status
+  useEffect(() => {
+    async function checkOnboarding() {
+      try {
+        const res = await fetch('/api/auth/onboarding')
+        if (res.ok) {
+          const data = await res.json()
+          setShowOnboarding(!data.completed)
+        }
+      } catch {
+        // If check fails, don't block — show dashboard
+      } finally {
+        setOnboardingChecked(true)
+      }
+    }
+    checkOnboarding()
+  }, [])
 
   // Fetch user info once
   useEffect(() => {
@@ -261,6 +282,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* ── Onboarding Flow ────────────────────────────────────────────────── */}
+      {onboardingChecked && showOnboarding && (
+        <Onboarding onComplete={() => setShowOnboarding(false)} />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
