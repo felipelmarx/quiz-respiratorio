@@ -10,12 +10,12 @@ import { BarChart } from '@/components/charts/bar-chart'
 
 interface KPIs {
   total_instructors: number
-  active_instructors: number
   total_responses: number
-  previous_responses: number
   total_leads: number
-  previous_leads: number
   avg_score: number
+  responses_current_period: number
+  responses_previous_period: number
+  growth_percentage: number
 }
 
 interface DailyResponse {
@@ -24,8 +24,8 @@ interface DailyResponse {
 }
 
 interface ScoreBucket {
-  label: string
-  value: number
+  score_bucket: string
+  count: number
 }
 
 interface ProfileBucket {
@@ -35,11 +35,11 @@ interface ProfileBucket {
 
 interface InstructorRanking {
   instructor_id: string
-  name: string
-  email: string
-  total_responses: number
-  total_leads: number
+  instructor_name: string
+  response_count: number
+  lead_count: number
   avg_score: number
+  last_response_at: string | null
 }
 
 interface AnalyticsData {
@@ -211,7 +211,7 @@ export default function AnalyticsPage() {
               <CardContent className="py-5">
                 <p className="text-body-sm text-gray-500">Total Instrutores</p>
                 <p className="mt-1 text-2xl font-bold text-navy-900">
-                  {fmt(kpis?.active_instructors ?? 0)}
+                  {fmt(kpis?.total_instructors ?? 0)}
                 </p>
                 <p className="mt-0.5 text-caption text-gray-400">ativos</p>
               </CardContent>
@@ -226,8 +226,8 @@ export default function AnalyticsPage() {
                     {fmt(kpis?.total_responses ?? 0)}
                   </span>
                   <GrowthBadge
-                    current={kpis?.total_responses ?? 0}
-                    previous={kpis?.previous_responses ?? 0}
+                    current={kpis?.responses_current_period ?? 0}
+                    previous={kpis?.responses_previous_period ?? 0}
                   />
                 </div>
               </CardContent>
@@ -237,15 +237,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardContent className="py-5">
                 <p className="text-body-sm text-gray-500">Total Leads</p>
-                <div className="mt-1 flex items-baseline">
-                  <span className="text-2xl font-bold text-navy-900">
-                    {fmt(kpis?.total_leads ?? 0)}
-                  </span>
-                  <GrowthBadge
-                    current={kpis?.total_leads ?? 0}
-                    previous={kpis?.previous_leads ?? 0}
-                  />
-                </div>
+                <p className="mt-1 text-2xl font-bold text-navy-900">
+                  {fmt(kpis?.total_leads ?? 0)}
+                </p>
               </CardContent>
             </Card>
 
@@ -300,7 +294,7 @@ export default function AnalyticsPage() {
                 <CardTitle>Distribuição de Scores</CardTitle>
               </CardHeader>
               <CardContent>
-                <BarChart data={data?.scoreDistribution ?? []} height={280} />
+                <BarChart data={(data?.scoreDistribution ?? []).map(s => ({ label: s.score_bucket, value: Number(s.count) }))} height={280} />
               </CardContent>
             </Card>
 
@@ -334,13 +328,13 @@ export default function AnalyticsPage() {
                           >
                             <td className="py-2.5 pr-4 text-gray-400 font-medium">{idx + 1}</td>
                             <td className="py-2.5 pr-4 font-medium text-gray-900 truncate max-w-[160px]">
-                              {inst.name || inst.email}
+                              {inst.instructor_name}
                             </td>
                             <td className="py-2.5 pr-4 text-right text-gray-700 tabular-nums">
-                              {fmt(inst.total_responses)}
+                              {fmt(inst.response_count)}
                             </td>
                             <td className="py-2.5 pr-4 text-right text-gray-700 tabular-nums">
-                              {fmt(inst.total_leads)}
+                              {fmt(inst.lead_count)}
                             </td>
                             <td className="py-2.5 text-right font-semibold text-navy-900 tabular-nums">
                               {inst.avg_score.toFixed(1).replace('.', ',')}

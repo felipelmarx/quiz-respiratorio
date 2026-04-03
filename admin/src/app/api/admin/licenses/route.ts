@@ -89,21 +89,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Log to license_history
-    const { error: historyError } = await supabase
-      .from('license_history')
-      .insert({
-        user_id: instructor_id,
-        changed_by: auth.user.id,
-        new_plan: license_plan,
-        new_price: license_price,
-        new_expires_at: license_expires_at,
-      })
-
-    if (historyError) {
-      // Non-blocking: log but don't fail
-      console.error('License history insert error:', historyError)
-    }
+    // Note: license_history is auto-populated by the DB trigger on users UPDATE
+    // No manual insert needed here
 
     return NextResponse.json({ success: true })
   } catch (error) {
