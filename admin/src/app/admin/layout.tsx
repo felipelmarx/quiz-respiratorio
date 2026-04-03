@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/dashboard/sidebar'
+import { SidebarProvider } from '@/components/dashboard/sidebar-context'
+import { MainContent } from '@/components/dashboard/main-content'
 import { getAuthUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 
@@ -16,15 +18,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .single()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar
-        userName={profile?.name || 'Admin'}
-        userRole={user.role}
-        permissions={user.permissions}
-      />
-      <main className="ml-64 p-8">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar
+          userName={profile?.name || 'Admin'}
+          userRole={user.role}
+          permissions={user.permissions}
+        />
+        <MainContent>
+          {children}
+        </MainContent>
+      </div>
+    </SidebarProvider>
   )
 }
