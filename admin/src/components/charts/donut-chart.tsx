@@ -7,8 +7,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  type TooltipProps,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip'
 
 const NAVY_900 = '#0A192F'
 const GOLD_500 = '#C6A868'
@@ -25,12 +25,13 @@ interface DonutChartProps {
   height?: number
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null
 
   const entry = payload[0]
   const total = (entry.payload as { total?: number }).total ?? 0
-  const percentage = total > 0 ? ((entry.value ?? 0) / total * 100).toFixed(1) : '0.0'
+  const numValue = typeof entry.value === 'number' ? entry.value : Number(entry.value) || 0
+  const percentage = total > 0 ? (numValue / total * 100).toFixed(1) : '0.0'
 
   return (
     <div
@@ -46,7 +47,7 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
         {entry.name}
       </p>
       <p style={{ color: '#ffffff', fontSize: 14, fontWeight: 700, margin: 0 }}>
-        {(entry.value ?? 0).toLocaleString('pt-BR')} ({percentage}%)
+        {numValue.toLocaleString('pt-BR')} ({percentage}%)
       </p>
     </div>
   )
@@ -161,7 +162,7 @@ export function DonutChart({ data, title, height = 300 }: DonutChartProps) {
             ))}
             <CenterLabel total={total} />
           </Pie>
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={CustomTooltip} />
           <Legend content={<CustomLegend />} />
         </PieChart>
       </ResponsiveContainer>

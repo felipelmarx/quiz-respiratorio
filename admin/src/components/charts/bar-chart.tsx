@@ -10,8 +10,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  type TooltipProps,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip'
 
 const NAVY_900 = '#0A192F'
 const NAVY_700 = '#243B55'
@@ -24,7 +24,7 @@ interface BarChartProps {
   color?: string
 }
 
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
 
   return (
@@ -41,7 +41,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
         {label}
       </p>
       <p style={{ color: '#ffffff', fontSize: 14, fontWeight: 700, margin: 0 }}>
-        {payload[0].value?.toLocaleString('pt-BR')}
+        {Number(payload[0].value ?? 0).toLocaleString('pt-BR')}
       </p>
     </div>
   )
@@ -100,7 +100,7 @@ export function BarChart({ data, title, height = 300, color = NAVY_700 }: BarCha
             tickLine={false}
             tickFormatter={(value: number) => value.toLocaleString('pt-BR')}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(198, 168, 104, 0.08)' }} />
+          <Tooltip content={CustomTooltip} cursor={{ fill: 'rgba(198, 168, 104, 0.08)' }} />
           <Bar
             dataKey="value"
             radius={[4, 4, 0, 0]}

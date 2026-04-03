@@ -8,8 +8,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  type TooltipProps,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip'
 
 const NAVY_900 = '#0A192F'
 const GOLD_500 = '#C6A868'
@@ -32,7 +32,7 @@ function CustomTooltip({
   active,
   payload,
   label,
-}: TooltipProps<number, string>) {
+}: TooltipContentProps) {
   if (!active || !payload?.length) return null
 
   return (
@@ -69,7 +69,7 @@ function CustomTooltip({
           />
           <span style={{ color: '#D1D5DB', fontSize: 12 }}>{entry.name}</span>
           <span style={{ color: '#ffffff', fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>
-            {(entry.value ?? 0).toLocaleString('pt-BR')}
+            {Number(entry.value ?? 0).toLocaleString('pt-BR')}
           </span>
         </div>
       ))}
@@ -139,7 +139,7 @@ export function AreaChart({ data, dataKeys, xAxisKey, title, height = 300 }: Are
             tickLine={false}
             tickFormatter={(value: number) => value.toLocaleString('pt-BR')}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={CustomTooltip} />
           {dataKeys.map((dk) => (
             <Area
               key={dk.key}

@@ -8,8 +8,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  type TooltipProps,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip'
 
 const NAVY_900 = '#0A192F'
 const GOLD_500 = '#C6A868'
@@ -31,7 +31,7 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null
 
   return (
@@ -45,10 +45,10 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
       }}
     >
       <p style={{ color: GOLD_500, fontSize: 12, margin: 0, marginBottom: 4 }}>
-        {formatDate(label ?? '')}
+        {formatDate(String(label ?? ''))}
       </p>
       <p style={{ color: '#ffffff', fontSize: 14, fontWeight: 700, margin: 0 }}>
-        {payload[0].value?.toLocaleString('pt-BR')}
+        {Number(payload[0].value ?? 0).toLocaleString('pt-BR')}
       </p>
     </div>
   )
@@ -102,7 +102,7 @@ export function LineChart({ data, title, height = 300 }: LineChartProps) {
             tickLine={false}
             tickFormatter={(value: number) => value.toLocaleString('pt-BR')}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={CustomTooltip} />
           <Line
             type="monotone"
             dataKey="count"
