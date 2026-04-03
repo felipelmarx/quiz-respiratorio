@@ -15,6 +15,7 @@ import {
   Home,
   ClipboardList,
   Contact,
+  GraduationCap,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -39,6 +40,7 @@ const instructorLinks: NavLink[] = [
   { href: '/dashboard', label: 'Visao Geral', icon: Home, permission: 'view_dashboard' },
   { href: '/dashboard/analytics', label: 'Analytics por Pergunta', icon: BarChart3, permission: 'view_dashboard' },
   { href: '/dashboard/responses', label: 'Respostas', icon: ClipboardList, permission: 'view_responses' },
+  { href: '/dashboard/students', label: 'Meus Alunos', icon: GraduationCap, permission: 'view_contacts' },
   { href: '/dashboard/contacts', label: 'Contatos', icon: Contact, permission: 'view_contacts' },
   { href: '/dashboard/settings', label: 'Configuracoes', icon: Settings, permission: 'manage_settings' },
 ]
