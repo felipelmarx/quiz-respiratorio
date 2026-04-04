@@ -24,6 +24,9 @@ const SUPABASE_CONFIG = {
     table: 'quiz_leads'
 };
 
+// ---- ADMIN API CONFIG ----
+const ADMIN_API_URL = 'https://quiz-respiratorio.vercel.app';
+
 // ---- ANALYTICS CONFIG (plug your IDs here) ----
 const ANALYTICS_CONFIG = {
     metaPixelId: '',     // e.g. '1234567890'
@@ -223,14 +226,55 @@ async function saveAnonymousResponse() {
     }
 }
 
-// ---- SAVE APPLICATION (Lead + Link to Response) ----
+// ---- SAVE APPLICATION (Lead + Response via API) ----
+// Uses the server-side /api/quiz/submit endpoint which creates the lead,
+// creates the quiz response, and links them in a single operation.
+// This avoids the RLS issue where anonymous PATCH to quiz_responses is blocked.
 async function saveApplication(leadData) {
-    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
-        console.log('[Supabase] Not configured, skipping save.');
-        return;
-    }
+    const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
+    const params = new URLSearchParams(window.location.search);
+    const instructorSlug = params.get('ref') || undefined;
 
-    // Enrich lead with instructor_id from resolved slug
+    const payload = {
+        name: leadData.name,
+        email: leadData.email,
+        phone: leadData.phone || undefined,
+        referral: leadData.referral || undefined,
+        instructor_slug: instructorSlug,
+        answers: answers,
+        scores: scores,
+        total_score: totalScore,
+        profile: profileKey,
+    };
+
+    try {
+        const response = await fetch(`${ADMIN_API_URL}/api/quiz/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('[API] Lead + response saved successfully:', result.lead_id);
+        } else {
+            const errorBody = await response.text();
+            console.error('[API] Error submitting quiz:', response.status, errorBody);
+            // Fallback: try direct Supabase lead save (response won't be linked, but lead is captured)
+            await saveLeadFallback(leadData);
+        }
+    } catch (error) {
+        console.error('[API] Network error:', error);
+        // Fallback: try direct Supabase lead save
+        await saveLeadFallback(leadData);
+    }
+}
+
+// Fallback: save lead directly to Supabase if the API endpoint is unreachable.
+// The anonymous response (if saved earlier) won't be linked, but at least the lead is captured.
+async function saveLeadFallback(leadData) {
+    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) return;
+
     const instructor = getInstructorConfig();
     const enrichedLead = {
         ...leadData,
@@ -238,7 +282,6 @@ async function saveApplication(leadData) {
     };
 
     try {
-        // 1. Save lead (with instructor_id)
         const leadResponse = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/quiz_leads`, {
             method: 'POST',
             headers: {
@@ -250,41 +293,14 @@ async function saveApplication(leadData) {
             body: JSON.stringify(enrichedLead)
         });
 
-        if (!leadResponse.ok) {
-            console.error('[Supabase] Error saving lead:', leadResponse.status);
-            return;
-        }
-
-        const leadResult = await leadResponse.json();
-        const leadId = leadResult[0]?.id;
-        console.log('[Supabase] Lead saved:', leadId);
-
-        // 2. Link response to lead (if we have a saved response)
-        if (savedResponseId && leadId) {
-            const updateResponse = await fetch(
-                `${SUPABASE_CONFIG.url}/rest/v1/quiz_responses?id=eq.${savedResponseId}`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_CONFIG.anonKey,
-                        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({
-                        lead_id: leadId,
-                    })
-                }
-            );
-
-            if (updateResponse.ok) {
-                console.log('[Supabase] Response linked to lead');
-            } else {
-                console.error('[Supabase] Error linking response:', updateResponse.status);
-            }
+        if (leadResponse.ok) {
+            const result = await leadResponse.json();
+            console.log('[Supabase Fallback] Lead saved:', result[0]?.id);
+        } else {
+            console.error('[Supabase Fallback] Error saving lead:', leadResponse.status);
         }
     } catch (error) {
-        console.error('[Supabase] Network error:', error);
+        console.error('[Supabase Fallback] Network error:', error);
     }
 }
 

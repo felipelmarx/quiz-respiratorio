@@ -2,6 +2,30 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { quizSubmissionSchema } from '@/lib/validations'
 
+// Allowed origins for CORS (quiz static site)
+const ALLOWED_ORIGINS = [
+  'https://quiz-lac-phi.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+]
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+// Handle CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(origin) })
+}
+
 // Anon client for public submissions (respects RLS, unlike admin client)
 function createAnonClient() {
   return createClient(
@@ -28,13 +52,16 @@ function isRateLimited(ip: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const corsHeaders = getCorsHeaders(origin)
+
   try {
     // Rate limiting by IP
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     if (isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Muitas requisições. Tente novamente em 1 minuto.' },
-        { status: 429 }
+        { status: 429, headers: corsHeaders }
       )
     }
 
@@ -44,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Dados inválidos', details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -77,7 +104,7 @@ export async function POST(request: NextRequest) {
       console.error('Lead insert error:', leadError)
       return NextResponse.json(
         { error: 'Erro ao salvar dados de contato' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -97,16 +124,16 @@ export async function POST(request: NextRequest) {
       console.error('Response insert error:', responseError)
       return NextResponse.json(
         { error: 'Erro ao salvar respostas do quiz' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
-    return NextResponse.json({ success: true, lead_id: lead.id })
+    return NextResponse.json({ success: true, lead_id: lead.id }, { headers: corsHeaders })
   } catch (error) {
     console.error('Quiz submit error:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
