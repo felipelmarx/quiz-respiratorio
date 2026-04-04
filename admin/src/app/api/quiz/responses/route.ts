@@ -1,21 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthUser } from '@/lib/auth'
-import { hasPermission } from '@/lib/permissions'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const authUser = await getAuthUser()
-
-    if (!authUser) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    if (!hasPermission(authUser.role, authUser.permissions, 'view_responses')) {
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-    }
+    const auth = await requireAuth({ permission: 'view_responses' })
+    if (!auth.ok) return auth.response
 
     const supabase = await createClient()
     const searchParams = request.nextUrl.searchParams
@@ -23,6 +15,8 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20') || 20), 100)
     const profile = searchParams.get('profile')
     const search = searchParams.get('search')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
     const offset = (page - 1) * limit
 
     let query = supabase
@@ -46,6 +40,14 @@ export async function GET(request: NextRequest) {
 
     if (profile) {
       query = query.eq('profile', profile)
+    }
+
+    if (dateFrom) {
+      query = query.gte('created_at', `${dateFrom}T00:00:00`)
+    }
+
+    if (dateTo) {
+      query = query.lte('created_at', `${dateTo}T23:59:59`)
     }
 
     if (search) {

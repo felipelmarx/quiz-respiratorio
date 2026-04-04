@@ -1,12 +1,62 @@
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { UserRole, UserPermissions } from '@/lib/types/database'
-import { parsePermissions } from '@/lib/permissions'
+import type { UserRole, UserPermissions, Permission } from '@/lib/types/database'
+import { parsePermissions, hasPermission } from '@/lib/permissions'
 
 export interface AuthUser {
   id: string
   role: UserRole
   is_active: boolean
   permissions: UserPermissions
+}
+
+export type AuthResult =
+  | { ok: true; user: AuthUser }
+  | { ok: false; response: NextResponse }
+
+/**
+ * Reusable auth guard for API routes.
+ * - No options: requires any authenticated user
+ * - role: requires the specified role (admin always passes)
+ * - permission: requires the specified permission (admin always passes)
+ */
+export async function requireAuth(options?: {
+  role?: UserRole
+  permission?: Permission
+}): Promise<AuthResult> {
+  const user = await getAuthUser()
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Não autenticado' },
+        { status: 401 }
+      ),
+    }
+  }
+
+  if (options?.role && user.role !== options.role && user.role !== 'admin') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Sem permissão' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  if (options?.permission && !hasPermission(user.role, user.permissions, options.permission)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Sem permissão' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return { ok: true, user }
 }
 
 /**

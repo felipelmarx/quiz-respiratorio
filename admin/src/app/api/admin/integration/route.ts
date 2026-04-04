@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAuthUser } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,10 +8,8 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-    }
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
 
     const apiUrl = process.env.MEMBERS_API_URL || ''
     const hasKey = !!process.env.MEMBERS_API_KEY
@@ -31,10 +29,8 @@ export async function GET() {
  */
 export async function POST() {
   try {
-    const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-    }
+    const auth = await requireAuth({ role: 'admin' })
+    if (!auth.ok) return auth.response
 
     const apiUrl = process.env.MEMBERS_API_URL
     const apiKey = process.env.MEMBERS_API_KEY

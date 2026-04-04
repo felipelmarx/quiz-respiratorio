@@ -4,108 +4,223 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { hasPermission } from '@/lib/permissions'
+import { useSidebar } from './sidebar-context'
 import type { UserRole, UserPermissions, Permission } from '@/lib/types/database'
+import { RealtimeBadge } from '@/components/dashboard/realtime-badge'
+import {
+  LayoutDashboard,
+  BarChart3,
+  Users,
+  CreditCard,
+  Settings,
+  Home,
+  ClipboardList,
+  Contact,
+  GraduationCap,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 
 interface SidebarProps {
   userName: string
   userRole: UserRole
+  userId: string
   permissions?: UserPermissions
 }
 
 interface NavLink {
   href: string
   label: string
-  icon: string
+  icon: LucideIcon
   permission?: Permission
 }
 
 const instructorLinks: NavLink[] = [
-  { href: '/dashboard', label: 'Visão Geral', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', permission: 'view_dashboard' },
-  { href: '/dashboard/responses', label: 'Respostas', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', permission: 'view_responses' },
-  { href: '/dashboard/contacts', label: 'Contatos', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', permission: 'view_contacts' },
-  { href: '/dashboard/settings', label: 'Configurações', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', permission: 'manage_settings' },
+  { href: '/dashboard', label: 'Visao Geral', icon: Home, permission: 'view_dashboard' },
+  { href: '/dashboard/analytics', label: 'Analytics por Pergunta', icon: BarChart3, permission: 'view_dashboard' },
+  { href: '/dashboard/responses', label: 'Respostas', icon: ClipboardList, permission: 'view_responses' },
+  { href: '/dashboard/students', label: 'Meus Alunos', icon: GraduationCap, permission: 'view_contacts' },
+  { href: '/dashboard/contacts', label: 'Contatos', icon: Contact, permission: 'view_contacts' },
+  { href: '/dashboard/branding', label: 'Personalização', icon: Palette, permission: 'manage_settings' },
+  { href: '/dashboard/settings', label: 'Configuracoes', icon: Settings, permission: 'manage_settings' },
 ]
 
 const masterLinks: NavLink[] = [
-  { href: '/admin', label: 'Painel Admin', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-  { href: '/admin/instructors', label: 'Instrutores', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-  { href: '/admin/settings', label: 'Configurações', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+  { href: '/admin', label: 'Visao Geral', icon: LayoutDashboard },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/admin/instructors', label: 'Instrutores', icon: Users },
+  { href: '/admin/licenses', label: 'Licencas', icon: CreditCard },
+  { href: '/admin/settings', label: 'Configuracoes', icon: Settings },
 ]
 
-export function Sidebar({ userName, userRole, permissions }: SidebarProps) {
+export function Sidebar({ userName, userRole, userId, permissions }: SidebarProps) {
   const pathname = usePathname()
+  const { collapsed, mobileOpen, toggle, setMobileOpen } = useSidebar()
 
-  // Filter instructor links based on permissions
   const visibleInstructorLinks = instructorLinks.filter((link) => {
     if (!link.permission) return true
     return hasPermission(userRole, permissions, link.permission)
   })
 
-  const links = userRole === 'admin'
-    ? [...masterLinks, { href: '---', label: 'divider', icon: '' }, ...visibleInstructorLinks]
-    : visibleInstructorLinks
+  const links =
+    userRole === 'admin'
+      ? [...masterLinks, { href: '---', label: 'divider', icon: LayoutDashboard }, ...visibleInstructorLinks]
+      : visibleInstructorLinks
 
-  return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-white">
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center border-b border-gray-200 px-6">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-700 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">iB</span>
-            </div>
-            <span className="font-bold text-gray-900">iBreathwork</span>
+  const sidebarContent = (
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className="flex h-16 items-center border-b border-gray-200 px-4">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className="h-8 w-8 shrink-0 rounded-lg bg-navy-900 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">iB</span>
           </div>
+          <span
+            className={cn(
+              'font-bold text-gray-900 whitespace-nowrap transition-opacity duration-300',
+              collapsed ? 'opacity-0 w-0' : 'opacity-100'
+            )}
+          >
+            iBreathwork
+          </span>
         </div>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-1">
-            {links.map((link) => {
-              if (link.href === '---') {
-                return <li key="divider" className="my-3 border-t border-gray-200" />
-              }
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <ul className="space-y-1">
+          {links.map((link) => {
+            if (link.href === '---') {
+              return <li key="divider" className="my-3 border-t border-gray-200" />
+            }
 
-              const isActive = pathname === link.href ||
-                (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
+            const isActive =
+              pathname === link.href ||
+              (link.href !== '/dashboard' && link.href !== '/admin' && pathname.startsWith(link.href))
 
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
+            const Icon = link.icon
+
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  title={collapsed ? link.label : undefined}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-navy-50 text-navy-900 border-l-2 border-gold-500'
+                      : 'text-gray-600 hover:bg-navy-50 hover:text-navy-700'
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      'whitespace-nowrap transition-opacity duration-300',
+                      collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                     )}
                   >
-                    <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
-                    </svg>
                     {link.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+                  </span>
+                  {link.label === 'Respostas' && (
+                    <span className={cn(
+                      'ml-auto transition-opacity duration-300',
+                      collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    )}>
+                      <RealtimeBadge userId={userId} userRole={userRole} />
+                    </span>
+                  )}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
 
-        {/* User */}
-        <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-              <span className="text-sm font-medium text-emerald-700">
-                {userName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-              <p className="text-xs text-gray-500 capitalize">{userRole === 'admin' ? 'Administrador' : 'Instrutor'}</p>
-            </div>
+      {/* User */}
+      <div className="border-t border-gray-200 p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 shrink-0 rounded-full bg-navy-50 flex items-center justify-center">
+            <span className="text-sm font-medium text-navy-700">
+              {userName.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div
+            className={cn(
+              'flex-1 min-w-0 transition-opacity duration-300',
+              collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+            )}
+          >
+            <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+            <p className="text-xs text-gray-500 capitalize">
+              {userRole === 'admin' ? 'Administrador' : 'Instrutor'}
+            </p>
           </div>
         </div>
       </div>
-    </aside>
+
+      {/* Toggle button */}
+      <div className="hidden md:flex border-t border-gray-200 p-2 justify-center">
+        <button
+          onClick={toggle}
+          className="flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 hover:bg-navy-50 hover:text-navy-700 transition-colors"
+          aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 md:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        aria-label="Abrir menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-200 bg-white md:hidden transition-transform duration-300',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="Fechar menu"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-40 h-screen border-r border-gray-200 bg-white hidden md:block transition-[width] duration-300 overflow-hidden',
+          collapsed ? 'w-16' : 'w-64'
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   )
 }
