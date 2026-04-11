@@ -17,6 +17,13 @@ let particlesActive = true;
 let showExplanations = true;
 let userMainProblems = [];
 
+// ---- STORIES EXPERIENCE STATE ----
+let wellbeingBefore = null;  // 1-10 captured at quiz start (delicate framing)
+let wellbeingAfter = null;   // 1-10 captured after guided practice
+let currentStoryCard = 0;
+let storyAutoTimer = null;
+let storyProgressAnimation = null;
+
 // ---- SUPABASE CONFIG (plug your keys here) ----
 const SUPABASE_CONFIG = {
     url: 'https://acvylqelzmpquxfvabfy.supabase.co',
@@ -441,8 +448,58 @@ function startQuiz() {
     btn.classList.add('pulse-out');
     setTimeout(() => {
         showScreen('quiz-screen');
-        showModeSelection();
+        showWellbeingIntro();
     }, 300);
+}
+
+// ---- WELLBEING INTRO (before quiz) ----
+// Captures the user's current state delicately, without medicalizing.
+// Used later in the Stories experience to show before/after the guided practice.
+function showWellbeingIntro() {
+    const container = document.getElementById('question-container');
+    container.innerHTML = `
+        <div class="question-card fade-in wellbeing-intro-card">
+            <div class="wellbeing-icon">💭</div>
+            <h2 class="question-text">Antes de começarmos, nos ajude a te conhecer</h2>
+            <p class="wellbeing-subtitle">Como você descreveria seu <strong>bem-estar mental</strong> agora?</p>
+
+            <div class="wellbeing-slider-container">
+                <div class="wellbeing-emojis">
+                    <span>😔</span>
+                    <span>😌</span>
+                </div>
+                <input type="range" id="wellbeing-intro-slider" min="1" max="10" value="5"
+                       class="wellbeing-slider" oninput="updateWellbeingLabel(this.value, 'wellbeing-intro-label')">
+                <div class="wellbeing-labels">
+                    <span class="wellbeing-label-min">Esgotada</span>
+                    <span class="wellbeing-value" id="wellbeing-intro-label">5</span>
+                    <span class="wellbeing-label-max">Em paz</span>
+                </div>
+            </div>
+
+            <p class="wellbeing-trust">Essa informação é apenas sua — nos ajuda a personalizar seu resultado.</p>
+
+            <button class="btn-primary btn-glow btn-full" onclick="submitWellbeingIntro()">
+                Continuar <span class="btn-arrow">&rarr;</span>
+            </button>
+        </div>
+    `;
+}
+
+function updateWellbeingLabel(value, targetId) {
+    const label = document.getElementById(targetId);
+    if (label) label.textContent = value;
+}
+
+function submitWellbeingIntro() {
+    haptic('light');
+    const slider = document.getElementById('wellbeing-intro-slider');
+    wellbeingBefore = parseInt(slider.value, 10);
+    trackEvent('wellbeing_before', { value: wellbeingBefore });
+
+    setTimeout(() => {
+        showModeSelection();
+    }, 200);
 }
 
 function showModeSelection() {
@@ -1063,7 +1120,7 @@ function submitLeadCapture(event) {
 
     trackEvent('lead_captured', { source: 'pre_result' });
 
-    showResults();
+    showStoriesExperience();
 }
 
 
@@ -1457,6 +1514,860 @@ function getPersonalizedBenefit() {
     if (benefits.length === 1) return benefits[0];
     if (benefits.length === 2) return `${benefits[0]} e ${benefits[1]}`;
     return `${benefits.slice(0, -1).join(', ')} e ${benefits[benefits.length - 1]}`;
+}
+
+// ============================================
+// STORIES EXPERIENCE (Spotify Wrapped style)
+// ============================================
+// A fullscreen, card-by-card interactive result experience.
+// Replaces the old scroll-heavy result screen with a narrative flow:
+//   1. Welcome → 2. Score → 3. Profile → 4-7. Categories →
+//   8. CTA Practice → 9. Video → 10. Wellbeing After →
+//   11. Before/After → 12. Empowerment → 13. CTA Form
+// Navigation: swipe, click zones, keyboard. Auto-advance with pause.
+
+const STORY_CARDS = [
+    { id: 'welcome',       type: 'welcome',     duration: 4000 },
+    { id: 'score',         type: 'score',       duration: 5500 },
+    { id: 'profile',       type: 'profile',     duration: 5500 },
+    { id: 'cat-padrao',    type: 'category',    duration: 4500, category: 'padrao' },
+    { id: 'cat-sintomas',  type: 'category',    duration: 4500, category: 'sintomas' },
+    { id: 'cat-conscien',  type: 'category',    duration: 4500, category: 'consciencia' },
+    { id: 'cat-toleran',   type: 'category',    duration: 4500, category: 'tolerancia' },
+    { id: 'cta-practice',  type: 'ctaPractice', duration: 0 },  // manual advance
+    { id: 'video',         type: 'video',       duration: 0 },  // manual advance
+    { id: 'wellbeing-after', type: 'wellbeingAfter', duration: 0 }, // manual advance
+    { id: 'compare',       type: 'compare',     duration: 7000 },
+    { id: 'empowerment',   type: 'empowerment', duration: 6000 },
+    { id: 'cta-form',      type: 'ctaForm',     duration: 0 }   // manual advance
+];
+
+function showStoriesExperience() {
+    trackEvent('stories_opened', {
+        profile: getProfile().title,
+        total_score: totalScore
+    });
+    haptic('success');
+
+    // Create fullscreen stories container
+    let container = document.getElementById('stories-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'stories-container';
+        container.className = 'stories-container';
+        document.body.appendChild(container);
+    }
+
+    // Hide other screens
+    document.querySelectorAll('.screen').forEach(s => {
+        s.style.display = 'none';
+    });
+
+    const profile = getProfile();
+    const profileKey = getProfileKey();
+
+    container.innerHTML = `
+        <!-- Progress bar segmented -->
+        <div class="stories-progress">
+            ${STORY_CARDS.map((_, i) => `
+                <div class="segment" data-segment="${i}">
+                    <div class="segment-fill"></div>
+                </div>
+            `).join('')}
+        </div>
+
+        <!-- Close button -->
+        <button class="stories-close" onclick="closeStories()" aria-label="Fechar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <!-- Track with all cards -->
+        <div class="stories-track" id="stories-track" data-profile="${profileKey}">
+            ${STORY_CARDS.map((card, i) => `
+                <section class="story-card story-${card.type}" data-card="${i}" data-profile="${profileKey}">
+                    ${renderStoryCard(card, profile, profileKey)}
+                </section>
+            `).join('')}
+        </div>
+
+        <!-- Tap zones for navigation -->
+        <div class="story-tap-zone story-tap-left" onclick="storyPrev()" aria-label="Anterior"></div>
+        <div class="story-tap-zone story-tap-right" onclick="storyNext()" aria-label="Próximo"></div>
+    `;
+
+    container.style.display = 'block';
+    currentStoryCard = 0;
+    goToStoryCard(0);
+    attachStorySwipeHandlers(container);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', storyKeyHandler);
+}
+
+function renderStoryCard(card, profile, profileKey) {
+    switch (card.type) {
+        case 'welcome':
+            return `
+                <div class="story-content story-welcome-content">
+                    <div class="story-logo">
+                        <div class="logo-dot"></div>
+                        <span class="logo-text">iBreathwork</span>
+                    </div>
+                    <div class="story-welcome-emoji">👋</div>
+                    <h1 class="story-title">Olá, ${escapeHTML(userName || 'você')}</h1>
+                    <p class="story-subtitle">Preparamos algo especial sobre sua respiração.</p>
+                    <p class="story-hint">Toque para avançar</p>
+                </div>
+            `;
+
+        case 'score': {
+            const healthScore = Math.max(0, 100 - Math.min(100, Math.round((totalScore / 33) * 100)));
+            return `
+                <div class="story-content story-score-content">
+                    <p class="story-eyebrow">SEU ÍNDICE</p>
+                    <div class="story-hero-number" data-target="${healthScore}">0</div>
+                    <p class="story-score-max">/100</p>
+                    <p class="story-score-label">Saúde Respiratória</p>
+                    <div class="story-score-ring-wrap">
+                        <svg class="story-score-ring" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,0.15)" stroke-width="6" fill="none"/>
+                            <circle class="story-ring-fill" cx="60" cy="60" r="52"
+                                stroke="#fff" stroke-width="6" fill="none"
+                                stroke-linecap="round"
+                                stroke-dasharray="326.73"
+                                stroke-dashoffset="326.73"
+                                transform="rotate(-90 60 60)"/>
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }
+
+        case 'profile':
+            return `
+                <div class="story-content story-profile-content">
+                    <p class="story-eyebrow">SEU PERFIL</p>
+                    <div class="story-profile-emoji">${profile.emoji}</div>
+                    <h1 class="story-title">${profile.title}</h1>
+                    <p class="story-body">${profile.mainInsight}</p>
+                </div>
+            `;
+
+        case 'category': {
+            const cat = CATEGORY_ANALYSIS[card.category];
+            const level = getCategoryLevel(card.category);
+            const score = scores[card.category];
+            const pct = Math.min(100, Math.round((score / cat.maxScore) * 100));
+            const insight = cat.insights[level];
+            return `
+                <div class="story-content story-category-content">
+                    <div class="story-cat-icon">${cat.icon}</div>
+                    <p class="story-eyebrow">CATEGORIA</p>
+                    <h1 class="story-title-sm">${cat.name}</h1>
+                    <div class="story-cat-bar">
+                        <div class="story-cat-bar-fill" data-width="${pct}" style="width: 0%"></div>
+                    </div>
+                    <p class="story-cat-score">${score} / ${cat.maxScore}</p>
+                    <p class="story-body story-cat-insight">${insight}</p>
+                </div>
+            `;
+        }
+
+        case 'ctaPractice':
+            return `
+                <div class="story-content story-practice-cta-content">
+                    <div class="story-pulse-circle">
+                        <div class="pulse-ring"></div>
+                        <div class="pulse-ring delay-1"></div>
+                        <div class="pulse-ring delay-2"></div>
+                        <div class="pulse-center">🫁</div>
+                    </div>
+                    <p class="story-eyebrow">UM EXPERIMENTO</p>
+                    <h1 class="story-title">Pare. Respire.</h1>
+                    <p class="story-body">Em <strong>60 segundos</strong> você vai sentir na prática o que a respiração funcional faz com o seu sistema nervoso.</p>
+                    <button class="story-btn-primary" onclick="storyNext()">
+                        ▶ Começar prática
+                    </button>
+                    <button class="story-btn-ghost" onclick="storySkipPractice()">
+                        Pular prática
+                    </button>
+                </div>
+            `;
+
+        case 'video':
+            return `
+                <div class="story-content story-video-content">
+                    <div class="story-video-wrapper">
+                        <iframe id="story-video-iframe"
+                            src=""
+                            data-embed="https://www.youtube.com/embed/zAvdtkmpz-8?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=0&loop=0"
+                            frameborder="0"
+                            allow="autoplay; encrypted-media; picture-in-picture; web-share"
+                            allowfullscreen></iframe>
+                    </div>
+                    <p class="story-video-hint">Respire junto com a animação</p>
+                    <button class="story-btn-primary" onclick="storyNext()">
+                        Já fiz, continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+
+        case 'wellbeingAfter':
+            return `
+                <div class="story-content story-wellbeing-after-content">
+                    <p class="story-eyebrow">AGORA ME CONTA</p>
+                    <h1 class="story-title">Como você está se sentindo agora?</h1>
+                    <p class="story-body">Após essa pausa consciente.</p>
+
+                    <div class="wellbeing-slider-container story-slider">
+                        <div class="wellbeing-emojis">
+                            <span>😔</span>
+                            <span>😌</span>
+                        </div>
+                        <input type="range" id="wellbeing-after-slider" min="1" max="10" value="5"
+                               class="wellbeing-slider" oninput="updateWellbeingLabel(this.value, 'wellbeing-after-label')">
+                        <div class="wellbeing-labels">
+                            <span class="wellbeing-label-min">Esgotada</span>
+                            <span class="wellbeing-value" id="wellbeing-after-label">5</span>
+                            <span class="wellbeing-label-max">Em paz</span>
+                        </div>
+                    </div>
+
+                    <button class="story-btn-primary" onclick="submitWellbeingAfter()">
+                        Ver minha evolução <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </div>
+            `;
+
+        case 'compare':
+            return `
+                <div class="story-content story-compare-content">
+                    <p class="story-eyebrow">SUA EVOLUÇÃO</p>
+                    <h1 class="story-title-sm">Antes &amp; Depois</h1>
+
+                    <div class="compare-bar-group">
+                        <p class="compare-label">ANTES</p>
+                        <div class="compare-bar">
+                            <div class="compare-bar-fill compare-before-fill" data-width="0" style="width: 0%"></div>
+                            <span class="compare-bar-value compare-before-value">—</span>
+                        </div>
+                    </div>
+
+                    <div class="compare-bar-group">
+                        <p class="compare-label">DEPOIS</p>
+                        <div class="compare-bar">
+                            <div class="compare-bar-fill compare-after-fill" data-width="0" style="width: 0%"></div>
+                            <span class="compare-bar-value compare-after-value">—</span>
+                        </div>
+                    </div>
+
+                    <div class="compare-delta" id="compare-delta">
+                        <span class="compare-delta-arrow">—</span>
+                        <span class="compare-delta-value">0</span>
+                        <span class="compare-delta-unit">pontos</span>
+                    </div>
+
+                    <p class="story-body compare-message" id="compare-message">Calculando sua evolução...</p>
+                </div>
+            `;
+
+        case 'empowerment':
+            return `
+                <div class="story-content story-empowerment-content">
+                    <div class="story-empowerment-emoji">✨</div>
+                    <h1 class="story-title">Você assumiu o controle.</h1>
+                    <p class="story-body story-empowerment-body">
+                        Em apenas <strong>60 segundos</strong> você tirou seu sistema nervoso do modo sobrevivência, regulou o coração e ganhou vitalidade.
+                    </p>
+                    <p class="story-body story-empowerment-body">
+                        Imagine o que acontece com <strong>alguns minutos por dia</strong>, com acompanhamento profissional.
+                    </p>
+                </div>
+            `;
+
+        case 'ctaForm':
+            return `
+                <div class="story-content story-cta-form-content">
+                    <div class="story-scarcity-badge">
+                        <span class="scarcity-icon">🎯</span>
+                        <span>5 vagas esta semana</span>
+                    </div>
+                    <h1 class="story-title">Pronta para ir mais fundo?</h1>
+                    <p class="story-body">
+                        Esta semana estamos selecionando <strong>5 pessoas</strong> para uma
+                        <strong>Sessão de Demonstração gratuita</strong> com um especialista iBreathwork.
+                    </p>
+                    <p class="story-body">Quer se candidatar?</p>
+                    <button class="story-btn-primary story-btn-xl" onclick="openQualificationForm()">
+                        Quero me candidatar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                    <button class="story-btn-ghost" onclick="closeStories()">
+                        Agora não, obrigada
+                    </button>
+                </div>
+            `;
+
+        default:
+            return `<div class="story-content"><p>Card indefinido.</p></div>`;
+    }
+}
+
+// ---- STORIES NAVIGATION ----
+function goToStoryCard(index) {
+    if (index < 0 || index >= STORY_CARDS.length) return;
+
+    const track = document.getElementById('stories-track');
+    if (!track) return;
+
+    const prev = currentStoryCard;
+    currentStoryCard = index;
+    track.style.transform = `translateX(-${index * 100}%)`;
+
+    // Update progress segments
+    updateStoryProgress(index);
+
+    // Clear any existing timers
+    clearStoryTimer();
+
+    // Track event
+    trackEvent('story_card_view', {
+        card: STORY_CARDS[index].id,
+        index: index,
+        direction: index > prev ? 'next' : (index < prev ? 'prev' : 'init')
+    });
+
+    haptic('light');
+
+    // Trigger per-card animations
+    setTimeout(() => triggerStoryCardAnimations(index), 100);
+
+    // Start auto-advance timer if card has duration
+    const card = STORY_CARDS[index];
+    if (card.duration > 0) {
+        startStoryTimer(card.duration, index);
+    }
+
+    // Special behavior per card
+    if (card.type === 'video') {
+        // Lazy-load video src only when this card is visible
+        const iframe = document.getElementById('story-video-iframe');
+        if (iframe && !iframe.src) {
+            iframe.src = iframe.dataset.embed;
+        }
+        trackEvent('story_video_play', {});
+    }
+}
+
+function storyNext() {
+    if (currentStoryCard < STORY_CARDS.length - 1) {
+        goToStoryCard(currentStoryCard + 1);
+    }
+}
+
+function storyPrev() {
+    if (currentStoryCard > 0) {
+        // Don't allow going back after wellbeing-after is answered to avoid losing data
+        goToStoryCard(currentStoryCard - 1);
+    }
+}
+
+function storySkipPractice() {
+    // Skip the video card — go straight from cta-practice to wellbeing-after
+    // But wellbeingAfter card doesn't make sense without practice, so skip it too
+    // Jump from ctaPractice (7) → empowerment (11) as alt flow
+    trackEvent('story_practice_skipped', {});
+    const empowermentIndex = STORY_CARDS.findIndex(c => c.type === 'empowerment');
+    if (empowermentIndex > -1) {
+        goToStoryCard(empowermentIndex);
+    }
+}
+
+function submitWellbeingAfter() {
+    const slider = document.getElementById('wellbeing-after-slider');
+    if (!slider) return;
+    wellbeingAfter = parseInt(slider.value, 10);
+    trackEvent('wellbeing_after', { value: wellbeingAfter, delta: wellbeingAfter - (wellbeingBefore || 5) });
+    haptic('success');
+    storyNext();
+}
+
+function closeStories() {
+    clearStoryTimer();
+    document.removeEventListener('keydown', storyKeyHandler);
+    const container = document.getElementById('stories-container');
+    if (container) {
+        container.classList.add('fade-out');
+        setTimeout(() => {
+            container.style.display = 'none';
+            container.classList.remove('fade-out');
+        }, 300);
+    }
+    trackEvent('story_closed', { last_card: STORY_CARDS[currentStoryCard]?.id });
+}
+
+// ---- STORIES PROGRESS BAR ----
+function updateStoryProgress(activeIndex) {
+    const segments = document.querySelectorAll('.stories-progress .segment-fill');
+    segments.forEach((fill, i) => {
+        if (i < activeIndex) {
+            fill.style.transition = 'none';
+            fill.style.width = '100%';
+        } else if (i === activeIndex) {
+            const card = STORY_CARDS[i];
+            if (card.duration > 0) {
+                fill.style.transition = 'none';
+                fill.style.width = '0%';
+                // Force reflow then start transition
+                void fill.offsetWidth;
+                fill.style.transition = `width ${card.duration}ms linear`;
+                fill.style.width = '100%';
+            } else {
+                // Manual advance card — show full
+                fill.style.transition = 'none';
+                fill.style.width = '100%';
+            }
+        } else {
+            fill.style.transition = 'none';
+            fill.style.width = '0%';
+        }
+    });
+}
+
+// ---- AUTO-ADVANCE TIMER ----
+function startStoryTimer(duration, index) {
+    clearStoryTimer();
+    storyAutoTimer = setTimeout(() => {
+        if (currentStoryCard === index) {
+            storyNext();
+        }
+    }, duration);
+}
+
+function clearStoryTimer() {
+    if (storyAutoTimer) {
+        clearTimeout(storyAutoTimer);
+        storyAutoTimer = null;
+    }
+}
+
+// ---- KEYBOARD HANDLER ----
+function storyKeyHandler(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        storyNext();
+    } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        storyPrev();
+    } else if (e.key === 'Escape') {
+        closeStories();
+    }
+}
+
+// ---- SWIPE HANDLING (Pointer Events) ----
+function attachStorySwipeHandlers(container) {
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    const onStart = (e) => {
+        const p = e.touches ? e.touches[0] : e;
+        startX = p.clientX;
+        startY = p.clientY;
+        startTime = Date.now();
+    };
+
+    const onEnd = (e) => {
+        const p = e.changedTouches ? e.changedTouches[0] : e;
+        const dx = p.clientX - startX;
+        const dy = p.clientY - startY;
+        const dt = Date.now() - startTime;
+
+        // Must be quick-ish and primarily horizontal
+        if (dt > 600) return;
+        if (Math.abs(dx) < 50) return;
+        if (Math.abs(dy) > Math.abs(dx)) return;
+
+        if (dx < 0) storyNext();
+        else storyPrev();
+    };
+
+    container.addEventListener('touchstart', onStart, { passive: true });
+    container.addEventListener('touchend', onEnd, { passive: true });
+    container.addEventListener('pointerdown', onStart);
+    container.addEventListener('pointerup', onEnd);
+}
+
+// ---- PER-CARD ANIMATIONS ----
+function triggerStoryCardAnimations(index) {
+    const card = STORY_CARDS[index];
+    const cardEl = document.querySelector(`.story-card[data-card="${index}"]`);
+    if (!cardEl) return;
+
+    if (card.type === 'score') {
+        const heroNumber = cardEl.querySelector('.story-hero-number');
+        const ringFill = cardEl.querySelector('.story-ring-fill');
+        if (!heroNumber || !ringFill) return;
+        const target = parseInt(heroNumber.dataset.target, 10) || 0;
+        animateCountUp(heroNumber, 0, target, 1800);
+        const circumference = 326.73;
+        const targetOffset = circumference - (circumference * target / 100);
+        ringFill.style.transition = 'stroke-dashoffset 1800ms cubic-bezier(0.16, 1, 0.3, 1)';
+        ringFill.style.strokeDashoffset = targetOffset;
+    }
+
+    if (card.type === 'category') {
+        const fill = cardEl.querySelector('.story-cat-bar-fill');
+        if (fill) {
+            const width = fill.dataset.width;
+            setTimeout(() => { fill.style.width = width + '%'; }, 200);
+        }
+    }
+
+    if (card.type === 'compare') {
+        renderCompareCard(cardEl);
+    }
+}
+
+function animateCountUp(element, start, end, duration) {
+    const startTime = performance.now();
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    function frame(now) {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / duration);
+        const eased = easeOut(t);
+        const current = Math.round(start + (end - start) * eased);
+        element.textContent = current;
+        if (t < 1) requestAnimationFrame(frame);
+        else element.textContent = end;
+    }
+    requestAnimationFrame(frame);
+}
+
+function renderCompareCard(cardEl) {
+    const beforeFill = cardEl.querySelector('.compare-before-fill');
+    const afterFill = cardEl.querySelector('.compare-after-fill');
+    const beforeValue = cardEl.querySelector('.compare-before-value');
+    const afterValue = cardEl.querySelector('.compare-after-value');
+    const deltaEl = cardEl.querySelector('#compare-delta');
+    const messageEl = cardEl.querySelector('#compare-message');
+
+    const before = wellbeingBefore || 5;
+    const after = wellbeingAfter || before;
+    const delta = after - before;
+    const improvedPct = before > 0 ? Math.round((delta / before) * 100) : 0;
+
+    // Animate before bar
+    setTimeout(() => {
+        beforeFill.style.width = (before * 10) + '%';
+        beforeValue.textContent = before + '/10';
+    }, 200);
+
+    // Animate after bar
+    setTimeout(() => {
+        afterFill.style.width = (after * 10) + '%';
+        afterValue.textContent = after + '/10';
+    }, 900);
+
+    // Animate delta
+    setTimeout(() => {
+        const arrow = deltaEl.querySelector('.compare-delta-arrow');
+        const val = deltaEl.querySelector('.compare-delta-value');
+        if (delta > 0) {
+            deltaEl.classList.add('positive');
+            arrow.textContent = '⬆';
+            val.textContent = '+' + delta;
+            messageEl.innerHTML = `Você melhorou <strong>${delta} ${delta === 1 ? 'ponto' : 'pontos'}</strong>${improvedPct > 0 ? ` (${improvedPct}%)` : ''} em apenas 60 segundos.`;
+        } else if (delta < 0) {
+            deltaEl.classList.add('neutral');
+            arrow.textContent = '→';
+            val.textContent = delta;
+            messageEl.textContent = 'Cada dia é diferente. O importante é que agora você tem uma ferramenta.';
+        } else {
+            deltaEl.classList.add('neutral');
+            arrow.textContent = '=';
+            val.textContent = '0';
+            messageEl.textContent = 'Continue praticando. A regulação do sistema nervoso é progressiva.';
+        }
+    }, 1800);
+}
+
+function openQualificationForm() {
+    trackEvent('qualification_form_opened', {});
+    closeStories();
+    // Show the result screen as the form host
+    setTimeout(() => {
+        showScreen('result-screen');
+        showQualificationForm();
+    }, 350);
+}
+
+// ============================================
+// QUALIFICATION FORM (3 steps, simplified)
+// ============================================
+// Replaces the old 5-step application form with a tight 3-step version
+// framed by scarcity ("5 pessoas selecionadas esta semana").
+
+let qualificationStep = 1;
+let qualificationData = {};
+
+function showQualificationForm() {
+    qualificationStep = 1;
+    qualificationData = {
+        wellbeingBefore: wellbeingBefore,
+        wellbeingAfter: wellbeingAfter,
+        problems: userMainProblems
+    };
+
+    const container = document.getElementById('result-container');
+    container.innerHTML = `
+        <div class="qualification-host">
+            <div class="qualification-card fade-in" id="qualification-card">
+                <!-- Rendered by renderQualificationStep -->
+            </div>
+        </div>
+    `;
+    renderQualificationStep();
+}
+
+function renderQualificationStep() {
+    const card = document.getElementById('qualification-card');
+    if (!card) return;
+
+    const totalSteps = 3;
+    const stepLabel = `Passo ${qualificationStep} de ${totalSteps}`;
+
+    switch (qualificationStep) {
+        case 1:
+            card.innerHTML = `
+                <div class="qual-step-indicator">${stepLabel}</div>
+                <div class="qual-scarcity-badge">
+                    <span class="scarcity-icon">🎯</span>
+                    <span>5 pessoas selecionadas esta semana</span>
+                </div>
+                <h2 class="qual-title">${escapeHTML(userName) || 'Olá'}, essa semana temos uma oportunidade especial</h2>
+                <p class="qual-body">
+                    Estamos selecionando <strong>5 pessoas</strong> para uma
+                    <strong>Sessão de Demonstração gratuita</strong> com um especialista iBreathwork.
+                </p>
+                <p class="qual-body">
+                    Vamos fazer algumas perguntas rápidas para entender se faz sentido você participar.
+                </p>
+                <form onsubmit="submitQualificationStep(event)" id="qual-step1-form">
+                    <div class="form-group">
+                        <label for="qual-name">Seu nome</label>
+                        <input type="text" id="qual-name" required value="${escapeHTML(userName || '')}" autocomplete="given-name">
+                    </div>
+                    <div class="form-group">
+                        <label for="qual-email">Seu melhor e-mail</label>
+                        <input type="email" id="qual-email" required value="${escapeHTML(userEmail || '')}" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="qual-phone">WhatsApp</label>
+                        <input type="tel" id="qual-phone" required value="${escapeHTML(userPhone || '')}" autocomplete="tel">
+                    </div>
+                    <button type="submit" class="btn-primary btn-full btn-glow">
+                        Continuar <span class="btn-arrow">&rarr;</span>
+                    </button>
+                </form>
+            `;
+            break;
+
+        case 2:
+            card.innerHTML = `
+                <div class="qual-step-indicator">${stepLabel}</div>
+                <h2 class="qual-title">O que mais te incomoda hoje?</h2>
+                <p class="qual-body">Selecione tudo que se aplica:</p>
+                <div class="qual-pain-grid">
+                    ${[
+                        { value: 'ansiedade', label: 'Ansiedade constante', icon: '😰' },
+                        { value: 'insonia', label: 'Insônia / Sono ruim', icon: '🌙' },
+                        { value: 'cansaco', label: 'Cansaço crônico', icon: '😴' },
+                        { value: 'foco', label: 'Dificuldade de foco', icon: '🧠' },
+                        { value: 'peito', label: 'Dor no peito / aperto', icon: '💢' },
+                        { value: 'outros', label: 'Outros', icon: '•' }
+                    ].map(p => `
+                        <button type="button" class="qual-pain-option" data-value="${p.value}" onclick="toggleQualPain(this)">
+                            <span class="qual-pain-icon">${p.icon}</span>
+                            <span class="qual-pain-label">${p.label}</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <button class="btn-primary btn-full btn-glow" onclick="submitQualificationStep()">
+                    Continuar <span class="btn-arrow">&rarr;</span>
+                </button>
+            `;
+            // Pre-select from previous step if any
+            if (qualificationData.pains && qualificationData.pains.length) {
+                setTimeout(() => {
+                    document.querySelectorAll('.qual-pain-option').forEach(btn => {
+                        if (qualificationData.pains.includes(btn.dataset.value)) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }, 0);
+            }
+            break;
+
+        case 3:
+            card.innerHTML = `
+                <div class="qual-step-indicator">${stepLabel}</div>
+                <h2 class="qual-title">Você está disposta a dedicar 10 minutos por dia?</h2>
+                <p class="qual-body">Para ver resultados reais, queremos pessoas comprometidas.</p>
+                <div class="qual-commit-options">
+                    <button type="button" class="qual-commit-option" data-value="committed" onclick="selectQualCommit(this)">
+                        <strong>Sim, 100% comprometida</strong>
+                        <span>Quero resultados reais</span>
+                    </button>
+                    <button type="button" class="qual-commit-option" data-value="maybe" onclick="selectQualCommit(this)">
+                        <strong>Talvez</strong>
+                        <span>Quero entender melhor antes</span>
+                    </button>
+                    <button type="button" class="qual-commit-option" data-value="unsure" onclick="selectQualCommit(this)">
+                        <strong>Ainda não sei</strong>
+                        <span>Preciso pensar</span>
+                    </button>
+                </div>
+
+                <p class="qual-body qual-schedule-label">Qual horário funciona melhor para você?</p>
+                <div class="qual-schedule-grid">
+                    <button type="button" class="qual-schedule-option" data-value="manha" onclick="selectQualSchedule(this)">
+                        🌅 Manhã
+                    </button>
+                    <button type="button" class="qual-schedule-option" data-value="tarde" onclick="selectQualSchedule(this)">
+                        ☀️ Tarde
+                    </button>
+                    <button type="button" class="qual-schedule-option" data-value="noite" onclick="selectQualSchedule(this)">
+                        🌙 Noite
+                    </button>
+                </div>
+
+                <button class="btn-primary btn-full btn-glow" id="btn-qual-submit" onclick="submitQualificationFinal()">
+                    Quero minha sessão de demonstração <span class="btn-arrow">&rarr;</span>
+                </button>
+                <p class="qual-trust">🔒 Seus dados estão seguros.</p>
+            `;
+            break;
+    }
+
+    trackEvent('qualification_step_view', { step: qualificationStep });
+}
+
+function toggleQualPain(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+}
+
+function selectQualCommit(btn) {
+    haptic('light');
+    document.querySelectorAll('.qual-commit-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    qualificationData.commitment = btn.dataset.value;
+}
+
+function selectQualSchedule(btn) {
+    haptic('light');
+    btn.classList.toggle('active');
+}
+
+function submitQualificationStep(event) {
+    if (event) event.preventDefault();
+    haptic('light');
+
+    if (qualificationStep === 1) {
+        const name = document.getElementById('qual-name').value.trim();
+        const email = document.getElementById('qual-email').value.trim();
+        const phone = document.getElementById('qual-phone').value.trim();
+        if (!name || !email || !phone) return;
+        qualificationData.name = name;
+        qualificationData.email = email;
+        qualificationData.phone = phone;
+        userName = name; userEmail = email; userPhone = phone;
+    } else if (qualificationStep === 2) {
+        const pains = Array.from(document.querySelectorAll('.qual-pain-option.active'))
+            .map(b => b.dataset.value);
+        if (pains.length === 0) {
+            const grid = document.querySelector('.qual-pain-grid');
+            if (grid) {
+                grid.classList.add('qual-error-shake');
+                setTimeout(() => grid.classList.remove('qual-error-shake'), 600);
+            }
+            return;
+        }
+        qualificationData.pains = pains;
+    }
+
+    qualificationStep++;
+    renderQualificationStep();
+}
+
+function submitQualificationFinal() {
+    if (!qualificationData.commitment) {
+        const grid = document.querySelector('.qual-commit-options');
+        if (grid) {
+            grid.classList.add('qual-error-shake');
+            setTimeout(() => grid.classList.remove('qual-error-shake'), 600);
+        }
+        return;
+    }
+    const schedule = Array.from(document.querySelectorAll('.qual-schedule-option.active'))
+        .map(b => b.dataset.value);
+    qualificationData.schedule = schedule;
+
+    haptic('success');
+
+    // Build leadData compatible with saveApplication
+    const leadData = {
+        name: qualificationData.name,
+        email: qualificationData.email,
+        phone: qualificationData.phone || null,
+        referral: null,
+        extra_data: {
+            problems: qualificationData.problems,
+            pains: qualificationData.pains,
+            commitment: qualificationData.commitment,
+            schedule: qualificationData.schedule,
+            wellbeing_before: wellbeingBefore,
+            wellbeing_after: wellbeingAfter,
+            wellbeing_delta: (wellbeingAfter != null && wellbeingBefore != null)
+                ? wellbeingAfter - wellbeingBefore : null,
+            source: 'stories_qualification'
+        }
+    };
+
+    saveApplication(leadData);
+
+    trackEvent('qualification_submitted', {
+        profile: getProfile().title,
+        total_score: totalScore,
+        commitment: qualificationData.commitment,
+        wellbeing_delta: leadData.extra_data.wellbeing_delta
+    });
+    if (window.fbq) fbq('track', 'Lead', { content_name: 'quiz_respiratorio' });
+
+    // Confirmation screen
+    const card = document.getElementById('qualification-card');
+    const instructor = getInstructorConfig();
+    const waMsg = `Olá! Acabei de fazer a avaliação respiratória do iBreathwork e gostaria de me candidatar para a sessão de demonstração.%0A%0AMeu perfil: ${getProfile().title}%0AScore: ${totalScore}/33`;
+    const waUrl = instructor.ctaUrl ? `${instructor.ctaUrl}?text=${waMsg}` : `https://wa.me/?text=${waMsg}`;
+    card.innerHTML = `
+        <div class="qual-confirmation fade-in">
+            <div class="qual-confirmation-icon">✅</div>
+            <h2 class="qual-title">Sua candidatura foi enviada!</h2>
+            <p class="qual-body">
+                Obrigado, <strong>${escapeHTML(qualificationData.name)}</strong>.
+                Se você for selecionada entre as 5 vagas desta semana,
+                um especialista entrará em contato pelo seu WhatsApp nos próximos dias.
+            </p>
+            <p class="qual-body"><em>Fique de olho no WhatsApp!</em></p>
+            ${instructor.ctaUrl ? `
+                <a href="${instructor.ctaUrl}" target="_blank" class="btn-primary btn-full btn-glow">
+                    Já adicionar no WhatsApp
+                </a>
+            ` : ''}
+        </div>
+    `;
 }
 
 function showResults() {
