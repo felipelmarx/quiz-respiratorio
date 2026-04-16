@@ -14,6 +14,23 @@ export const quizProfileSchema = z.enum([
   'disfuncao_severa',
 ])
 
+// Qualitative lead metadata captured by the Stories-style qualification form.
+// Kept permissive (passthrough) because the quiz client evolves faster than
+// the admin, and we don't want new optional fields to break submissions.
+// All numeric wellbeing values are 1-10 sliders.
+export const extraDataSchema = z
+  .object({
+    wellbeing_before: z.number().int().min(1).max(10).nullable().optional(),
+    wellbeing_after: z.number().int().min(1).max(10).nullable().optional(),
+    wellbeing_delta: z.number().int().min(-10).max(10).nullable().optional(),
+    problems: z.array(z.string().max(50)).max(20).optional(),
+    pains: z.array(z.string().max(50)).max(20).optional(),
+    commitment: z.enum(['committed', 'maybe', 'unsure']).optional(),
+    schedule: z.array(z.string().max(20)).max(10).optional(),
+    source: z.string().max(50).optional(),
+  })
+  .passthrough()
+
 export const quizSubmissionSchema = z.object({
   name: z.string().min(2).max(100).trim(),
   email: z.string().email().max(255).trim().toLowerCase(),
@@ -27,6 +44,8 @@ export const quizSubmissionSchema = z.object({
   scores: quizScoresSchema,
   total_score: z.number().min(0).max(33),
   profile: quizProfileSchema,
+  // Optional qualitative metadata from Stories-style qualification form
+  extra_data: extraDataSchema.optional(),
 })
 
 export const loginSchema = z.object({

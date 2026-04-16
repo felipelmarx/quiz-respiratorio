@@ -2809,19 +2809,21 @@ details[open] .technical-summary::after {
     width: 100%;
     animation: storyFadeIn 0.6s ease-out;
     position: relative;
-    z-index: 5;
+    /* No z-index here — would create a stacking context that traps buttons
+       below the tap-zone siblings. Buttons set their own z-index. */
 }
 @keyframes storyFadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Tap zones */
+/* Tap zones — kept BELOW any interactive content in the story card.
+   Buttons inside .story-content set z-index: 25 and remain above these. */
 .story-tap-zone {
     position: absolute;
     top: 0;
     bottom: 0;
-    z-index: 20;
+    z-index: 4;
     cursor: pointer;
 }
 .story-tap-left {
@@ -3100,6 +3102,9 @@ details[open] .technical-summary::after {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    /* Ensure the iframe is above the tap-zones so YouTube controls work */
+    position: relative;
+    z-index: 25;
 }
 .story-video-wrapper iframe {
     width: 100%;
@@ -3124,6 +3129,9 @@ details[open] .technical-summary::after {
     padding: 20px 16px;
     border-radius: 20px;
     margin: 20px 0;
+    /* Must be above tap zones (z-index: 4) so the range input receives touches */
+    position: relative;
+    z-index: 25;
 }
 .story-wellbeing-after-content .wellbeing-label-min,
 .story-wellbeing-after-content .wellbeing-label-max {

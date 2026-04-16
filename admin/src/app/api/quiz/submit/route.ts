@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       instructorId = id || null
     }
 
-    // Insert lead
+    // Insert lead (with optional qualitative extra_data from Stories qualification form)
     const { data: lead, error: leadError } = await supabase
       .from('quiz_leads')
       .insert({
@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         phone: data.phone || null,
         referral: data.referral || null,
         instructor_id: instructorId,
+        extra_data: data.extra_data ?? {},
       })
       .select('id')
       .single()

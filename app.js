@@ -237,6 +237,8 @@ async function saveAnonymousResponse() {
 // Uses the server-side /api/quiz/submit endpoint which creates the lead,
 // creates the quiz response, and links them in a single operation.
 // This avoids the RLS issue where anonymous PATCH to quiz_responses is blocked.
+// Also forwards extra_data (qualitative metadata from the Stories-style
+// qualification form: wellbeing before/after, pains, commitment, schedule).
 async function saveApplication(leadData) {
     const profileKey = totalScore <= 7 ? 'funcional' : totalScore <= 15 ? 'atencao_moderada' : totalScore <= 23 ? 'disfuncao' : 'disfuncao_severa';
     const params = new URLSearchParams(window.location.search);
@@ -252,6 +254,8 @@ async function saveApplication(leadData) {
         scores: scores,
         total_score: totalScore,
         profile: profileKey,
+        // Forward qualitative metadata if the form provided it
+        extra_data: leadData.extra_data || undefined,
     };
 
     try {
@@ -279,13 +283,19 @@ async function saveApplication(leadData) {
 
 // Fallback: save lead directly to Supabase if the API endpoint is unreachable.
 // The anonymous response (if saved earlier) won't be linked, but at least the lead is captured.
+// IMPORTANT: picks only schema-known columns to avoid "column does not exist"
+// PostgREST errors when leadData has extra client-only keys.
 async function saveLeadFallback(leadData) {
     if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) return;
 
     const instructor = getInstructorConfig();
     const enrichedLead = {
-        ...leadData,
+        name: leadData.name,
+        email: leadData.email,
+        phone: leadData.phone || null,
+        referral: leadData.referral || null,
         instructor_id: instructor.instructorId || null,
+        extra_data: leadData.extra_data || {},
     };
 
     try {
@@ -1896,8 +1906,19 @@ function submitWellbeingAfter() {
 function closeStories() {
     clearStoryTimer();
     document.removeEventListener('keydown', storyKeyHandler);
+
+    // Stop the YouTube practice video so its audio doesn't bleed into the
+    // next screen. Clearing the iframe src is the most reliable way.
+    const videoIframe = document.getElementById('story-video-iframe');
+    if (videoIframe) {
+        videoIframe.src = '';
+    }
+
     const container = document.getElementById('stories-container');
     if (container) {
+        // Detach previously bound swipe handlers to prevent listener
+        // accumulation if showStoriesExperience() is re-entered.
+        detachStorySwipeHandlers(container);
         container.classList.add('fade-out');
         setTimeout(() => {
             container.style.display = 'none';
@@ -1966,23 +1987,26 @@ function storyKeyHandler(e) {
 }
 
 // ---- SWIPE HANDLING (Pointer Events) ----
+// Handler refs kept on the element so we can detach cleanly and avoid
+// listener accumulation if Stories is re-opened.
 function attachStorySwipeHandlers(container) {
-    let startX = 0;
-    let startY = 0;
-    let startTime = 0;
+    // If previously attached, detach first to avoid duplicates.
+    detachStorySwipeHandlers(container);
+
+    const state = { startX: 0, startY: 0, startTime: 0 };
 
     const onStart = (e) => {
         const p = e.touches ? e.touches[0] : e;
-        startX = p.clientX;
-        startY = p.clientY;
-        startTime = Date.now();
+        state.startX = p.clientX;
+        state.startY = p.clientY;
+        state.startTime = Date.now();
     };
 
     const onEnd = (e) => {
         const p = e.changedTouches ? e.changedTouches[0] : e;
-        const dx = p.clientX - startX;
-        const dy = p.clientY - startY;
-        const dt = Date.now() - startTime;
+        const dx = p.clientX - state.startX;
+        const dy = p.clientY - state.startY;
+        const dt = Date.now() - state.startTime;
 
         // Must be quick-ish and primarily horizontal
         if (dt > 600) return;
@@ -1997,6 +2021,19 @@ function attachStorySwipeHandlers(container) {
     container.addEventListener('touchend', onEnd, { passive: true });
     container.addEventListener('pointerdown', onStart);
     container.addEventListener('pointerup', onEnd);
+
+    // Stash for removal
+    container._storySwipeHandlers = { onStart, onEnd };
+}
+
+function detachStorySwipeHandlers(container) {
+    if (!container || !container._storySwipeHandlers) return;
+    const { onStart, onEnd } = container._storySwipeHandlers;
+    container.removeEventListener('touchstart', onStart);
+    container.removeEventListener('touchend', onEnd);
+    container.removeEventListener('pointerdown', onStart);
+    container.removeEventListener('pointerup', onEnd);
+    container._storySwipeHandlers = null;
 }
 
 // ---- PER-CARD ANIMATIONS ----
